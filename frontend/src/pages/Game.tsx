@@ -1,8 +1,7 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useSocket } from '../hooks/useSocket';
-import { useAudio } from '../hooks/useAudio';
-import { useYouTubePlayer } from '../hooks/useYouTubePlayer';
+import { useGameAudio } from '../hooks/useGameAudio';
 import { PlayerHeader } from '../game/components/PlayerHeader';
 import { CardSlot } from '../game/components/CardSlot';
 import { AudioPlayer } from '../game/components/AudioPlayer';
@@ -12,13 +11,20 @@ import { ValidationFeedback } from '../game/components/ValidationFeedback';
 
 export default function Game() {
   const navigate = useNavigate();
-  const { room, myPlayerId, flipCard, selectPosition, placeCard, notifyAudioStarted, onAudioPlay } = useSocket();
-
-  const provider = room?.config.provider ?? 'deezer';
-  const { isPlaying, isLoading, progress, error, play, stop } = useAudio();
-  const ytPlayer = useYouTubePlayer();
-  const [providerError, setProviderError] = useState<string | null>(null);
-  const nextTurnTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const { room, myPlayerId, flipCard, selectPosition, placeCard, skipCard } = useSocket();
+  const {
+    provider,
+    activeIsPlaying,
+    hasListened,
+    displayError,
+    missingYouTubeVideo,
+    thumbnailUrl,
+    ytContainerRef,
+    handlePlay,
+    handleStop,
+    ytPlayer,
+    audio: audioState,
+  } = useGameAudio(room, myPlayerId);
 
   useEffect(() => {
     if (!room) { navigate('/'); return; }
@@ -26,82 +32,25 @@ export default function Game() {
     if (room.status === 'finished') navigate(`/results/${room.code}`);
   }, [room, navigate]);
 
-  // Auto-avance tras validación (solo el servidor lo hace — aquí solo limpiamos audio)
-  useEffect(() => {
-    if (room?.status === 'validating') {
-      nextTurnTimerRef.current = setTimeout(() => {
-        stop();
-        ytPlayer.stop();
-      }, 2500);
-    }
-    return () => {
-      if (nextTurnTimerRef.current) clearTimeout(nextTurnTimerRef.current);
-    };
-  }, [room?.status, stop, ytPlayer]);
-
-  // Limpiar error al cambiar carta
-  useEffect(() => { setProviderError(null); }, [room?.currentCard]);
-
-  // Escuchar audio sincronizado (cuando syncAudio=true, el servidor ordena reproducir)
-  useEffect(() => {
-    if (!room?.config.syncAudio) return;
-    return onAudioPlay(({ trackId, provider: p, hookStart, hookDuration }) => {
-      if (isActivePlayer) return; // el activo ya lo lanzó él mismo
-      if (p === 'youtube') {
-        ytPlayer.play(trackId, hookStart, hookDuration);
-      } else {
-        play(trackId, p, hookStart, hookDuration);
-      }
-    });
-  }, [room?.config.syncAudio, onAudioPlay, play, ytPlayer]);
-
   if (!room) return null;
 
   const currentPlayer = room.players[room.currentPlayerIndex] ?? null;
   const myPlayer = room.players.find((p) => p.id === myPlayerId) ?? null;
   const isActivePlayer = currentPlayer?.id === myPlayerId;
 
-  function handlePlay() {
-    if (!room?.currentCard || !isActivePlayer) return;
-    setProviderError(null);
-    const card = room.currentCard;
-
-    if (provider === 'youtube') {
-      const videoId = card.providerIds?.youtube;
-      if (!videoId) { setProviderError('Esta canción no tiene vídeo de YouTube configurado'); return; }
-      ytPlayer.play(videoId, card.hookStart, card.hookDuration);
-    } else {
-      const trackId = provider === 'spotify'
-        ? (card.providerIds?.spotify ?? String(card.deezerId))
-        : String(card.deezerId);
-      play(trackId, provider, card.hookStart, card.hookDuration);
-    }
-
-    if (room.config.syncAudio) notifyAudioStarted();
-  }
-
-  function handleConfirm() {
-    if (!isActivePlayer || room?.selectedPosition === null) return;
-    stop();
-    ytPlayer.stop();
-    placeCard();
-  }
-
-  const activeProgress = provider === 'youtube' ? ytPlayer.progress : progress;
-  const activeIsPlaying = provider === 'youtube' ? ytPlayer.isPlaying : isPlaying;
-  const hasListened = activeProgress > 0;
-  const canConfirm = room?.status === 'round_active' && room.selectedPosition !== null && hasListened && isActivePlayer;
-  const displayError = providerError ?? (provider === 'youtube' ? ytPlayer.error : error);
-
   if (!currentPlayer) return null;
 
   const isRevealed = room.status === 'validating';
+  const canConfirm =
+    room.status === 'round_active' &&
+    room.selectedPosition !== null &&
+    hasListened &&
+    isActivePlayer;
 
   return (
-    <main className="min-h-screen flex flex-col bg-background max-w-sm mx-auto">
+    <main className="relative min-h-screen flex flex-col bg-background max-w-sm mx-auto">
       <PlayerHeader player={currentPlayer} />
 
-      {/* Banner para jugadores no activos */}
       {!isActivePlayer && room.status === 'round_active' && (
         <div className="px-5 py-2 bg-surface border-b border-border text-center text-sm text-muted">
           Turno de <span className="text-foreground font-semibold">{currentPlayer.name}</span>
@@ -115,27 +64,35 @@ export default function Game() {
             song={room.currentCard}
             isRevealed={isRevealed}
             isPlaying={activeIsPlaying}
+            thumbnailUrl={isRevealed ? thumbnailUrl : undefined}
           />
         )}
+
+        {/* IFrame de YouTube siempre oculto: mostrar el vídeo revelaría la canción */}
+        <div
+          ref={ytContainerRef}
+          style={{ position: 'fixed', width: '200px', height: '200px', transform: 'translate(-9999px, -9999px)', pointerEvents: 'none', opacity: 0 }}
+        />
 
         {room.status === 'round_active' && (
           provider === 'youtube' ? (
             <YouTubePlayer
               isPlaying={ytPlayer.isPlaying}
+              isLoading={ytPlayer.isLoading}
               progress={ytPlayer.progress}
+              hookDuration={room.currentCard?.hookDuration ?? 15}
               error={displayError}
-              embedUrl={ytPlayer.embedUrl}
               onPlay={handlePlay}
               onStop={ytPlayer.stop}
             />
           ) : (
             <AudioPlayer
-              isPlaying={isPlaying}
-              isLoading={isLoading}
-              progress={progress}
+              isPlaying={audioState.isPlaying}
+              isLoading={audioState.isLoading}
+              progress={audioState.progress}
               error={displayError}
               onPlay={handlePlay}
-              onStop={stop}
+              onStop={handleStop}
             />
           )
         )}
@@ -152,18 +109,27 @@ export default function Game() {
         )}
 
         {room.status === 'round_active' && isActivePlayer && (
-          <div className="px-5 mt-2">
-            <button
-              onClick={handleConfirm}
-              disabled={!canConfirm}
-              className="w-full py-4 rounded-2xl bg-accent text-black font-bold text-lg disabled:opacity-30 transition-opacity active:opacity-80"
-            >
-              {!hasListened
-                ? 'Escucha la canción primero'
-                : room.selectedPosition === null
-                ? 'Elige una posición'
-                : 'Confirmar posición'}
-            </button>
+          <div className="px-5 mt-2 flex flex-col gap-2">
+            {missingYouTubeVideo || (provider === 'youtube' && !!ytPlayer.error) ? (
+              <button
+                onClick={skipCard}
+                className="w-full py-4 rounded-2xl bg-surface border border-border text-foreground font-bold text-lg active:opacity-80"
+              >
+                Saltar canción
+              </button>
+            ) : (
+              <button
+                onClick={() => { handleStop(); placeCard(); }}
+                disabled={!canConfirm}
+                className="w-full py-4 rounded-2xl bg-accent text-black font-bold text-lg disabled:opacity-30 transition-opacity active:opacity-80"
+              >
+                {!hasListened
+                  ? 'Escucha la canción primero'
+                  : room.selectedPosition === null
+                  ? 'Elige una posición'
+                  : 'Confirmar posición'}
+              </button>
+            )}
           </div>
         )}
 

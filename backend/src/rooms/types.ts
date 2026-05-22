@@ -1,3 +1,4 @@
+// Tipos equivalentes en frontend: frontend/src/types/socket.ts (RoomPlayer, RoomConfig, RoomStatus, Room)
 import type { Song, MusicProvider } from '../types';
 
 export interface RoomPlayer {
