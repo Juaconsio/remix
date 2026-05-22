@@ -1,0 +1,39 @@
+services:
+  backend:
+    image: node:22-alpine
+    working_dir: /app
+    command: sh -c "corepack enable && pnpm install && pnpm dev"
+    volumes:
+      - ./backend:/app
+      - backend_modules:/app/node_modules
+    ports:
+      - "4000:4000"
+    env_file:
+      - path: ./backend/.env
+        required: false
+    environment:
+      PORT: 4000
+      CLIENT_URL: "*"
+
+  frontend:
+    image: node:22-alpine
+    working_dir: /app
+    command: sh -c "corepack enable && pnpm install && pnpm dev"
+    volumes:
+      - ./frontend:/app
+      - frontend_modules:/app/node_modules
+    ports:
+      - "3000:3000"
+    depends_on:
+      - backend
+
+  cloudflared:
+    image: cloudflare/cloudflared:latest
+    command: tunnel --no-autoupdate --url http://frontend:3000
+    depends_on:
+      - frontend
+    restart: unless-stopped
+
+volumes:
+  backend_modules:
+  frontend_modules:

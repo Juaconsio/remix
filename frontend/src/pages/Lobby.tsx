@@ -4,7 +4,10 @@ import { useSocket } from '../hooks/useSocket';
 import { useProviderStore } from '../store/providerStore';
 import type { MusicProvider } from '../types/game';
 
-const PACKS = [{ id: 'base', name: 'Pack Base', description: '20 hits de todos los tiempos (1967–2023)' }];
+const PACKS = [
+  { id: 'base', name: 'Pack Base', description: '20 hits de todos los tiempos (1967–2023)' },
+  { id: 'indie-vibes', name: 'Indie Vibes', description: '15 canciones indie/alternativas' },
+];
 
 export default function Lobby() {
   const navigate = useNavigate();

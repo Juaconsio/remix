@@ -1,5 +1,7 @@
-<!-- BEGIN:nextjs-agent-rules -->
-# This is NOT the Next.js you know
+# Este proyecto NO es Next.js
 
-This version has breaking changes — APIs, conventions, and file structure may all differ from your training data. Read the relevant guide in `node_modules/next/dist/docs/` before writing any code. Heed deprecation notices.
-<!-- END:nextjs-agent-rules -->
+El proyecto migró a **Vite + React** (frontend) + **Express + Socket.io** (backend).
+
+La carpeta `app/` fue eliminada — era el proyecto Next.js anterior.
+
+Lee `CLAUDE.md` para la arquitectura actual.

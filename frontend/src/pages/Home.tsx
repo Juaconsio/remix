@@ -4,15 +4,35 @@ import { useSocket } from '../hooks/useSocket';
 
 export default function Home() {
   const navigate = useNavigate();
-  const { room, error, createRoom, joinRoom } = useSocket();
+  const { room, error, createRoom, joinRoom, updateConfig, startGame } = useSocket();
 
   const [playerName, setPlayerName] = useState('');
   const [joinCode, setJoinCode] = useState('');
   const [mode, setMode] = useState<'idle' | 'create' | 'join'>('idle');
+  const [devMode, setDevMode] = useState(false);
 
+  // Flujo normal: ir al lobby
   useEffect(() => {
-    if (room) navigate(`/lobby/${room.code}`);
-  }, [room, navigate]);
+    if (!room || devMode) return;
+    navigate(`/lobby/${room.code}`);
+  }, [room, navigate, devMode]);
+
+  // Dev mode: configurar provider youtube + arrancar partida sin lobby
+  useEffect(() => {
+    if (!room || !devMode) return;
+    if (room.status === 'lobby') {
+      updateConfig({ provider: 'youtube' });
+      startGame();
+    }
+    if (room.status === 'setup') {
+      navigate(`/game/${room.code}`);
+    }
+  }, [room, navigate, devMode, updateConfig, startGame]);
+
+  function handleDevStart() {
+    setDevMode(true);
+    createRoom('Dev');
+  }
 
   function handleCreate(e: React.FormEvent) {
     e.preventDefault();
@@ -50,6 +70,14 @@ export default function Home() {
             >
               Unirse a sala
             </button>
+            {import.meta.env.DEV && (
+              <button
+                onClick={handleDevStart}
+                className="w-full py-2 rounded-xl bg-surface border border-border text-muted text-sm active:opacity-80"
+              >
+                ⚡ Dev: solo YouTube
+              </button>
+            )}
           </div>
         )}
 

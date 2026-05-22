@@ -14,6 +14,7 @@ export interface SocketContextValue {
   flipCard: () => void;
   selectPosition: (position: number) => void;
   placeCard: () => void;
+  skipCard: () => void;
   notifyAudioStarted: () => void;
   onAudioPlay: (handler: ServerToClientEvents['game:audio:play']) => () => void;
 }

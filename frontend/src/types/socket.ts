@@ -32,12 +32,14 @@ export interface Room {
 export interface ClientToServerEvents {
   'room:create': (payload: { playerName: string }) => void;
   'room:join': (payload: { code: string; playerName: string }) => void;
+  'room:rejoin': (payload: { code: string; playerName: string }) => void;
   'room:config': (payload: Partial<RoomConfig>) => void;
   'game:start': () => void;
   'game:flip': () => void;
   'game:select': (payload: { position: number }) => void;
   'game:place': () => void;
   'game:audio:started': () => void;
+  'game:skip': () => void;
 }
 
 // Eventos servidor → cliente

@@ -5,7 +5,10 @@ import type { ServerToClientEvents, ClientToServerEvents, Room, RoomConfig } fro
 
 type AppSocket = Socket<ServerToClientEvents, ClientToServerEvents>;
 
-const BACKEND_URL = import.meta.env.VITE_BACKEND_URL ?? 'http://localhost:4000';
+const BACKEND_URL = import.meta.env.VITE_BACKEND_URL ?? window.location.origin;
+const DEV_SESSION_KEY = 'dev_room_session';
+
+interface DevSession { roomCode: string; playerName: string; }
 
 export function SocketProvider({ children }: { children: ReactNode }) {
   const socketRef = useRef<AppSocket | null>(null);
@@ -13,19 +16,43 @@ export function SocketProvider({ children }: { children: ReactNode }) {
   const [myPlayerId, setMyPlayerId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [connected, setConnected] = useState(false);
+  const pendingPlayerNameRef = useRef<string | null>(null);
 
   useEffect(() => {
     const socket: AppSocket = io(BACKEND_URL, { autoConnect: true });
     socketRef.current = socket;
 
-    socket.on('connect', () => { setConnected(true); setError(null); });
+    socket.on('connect', () => {
+      setConnected(true);
+      setError(null);
+      if (import.meta.env.DEV) {
+        const raw = sessionStorage.getItem(DEV_SESSION_KEY);
+        if (raw) {
+          try {
+            const session: DevSession = JSON.parse(raw);
+            pendingPlayerNameRef.current = session.playerName;
+            socket.emit('room:rejoin', { code: session.roomCode, playerName: session.playerName });
+          } catch {
+            sessionStorage.removeItem(DEV_SESSION_KEY);
+          }
+        }
+      }
+    });
     socket.on('disconnect', () => setConnected(false));
     socket.on('room:joined', ({ room, yourPlayerId }) => {
       setRoom(room);
       setMyPlayerId(yourPlayerId);
       setError(null);
+      if (import.meta.env.DEV && pendingPlayerNameRef.current) {
+        const session: DevSession = { roomCode: room.code, playerName: pendingPlayerNameRef.current };
+        sessionStorage.setItem(DEV_SESSION_KEY, JSON.stringify(session));
+        pendingPlayerNameRef.current = null;
+      }
     });
-    socket.on('room:error', ({ message }) => setError(message));
+    socket.on('room:error', ({ message }) => {
+      setError(message);
+      if (import.meta.env.DEV) sessionStorage.removeItem(DEV_SESSION_KEY);
+    });
     socket.on('room:updated', ({ room }) => setRoom(room));
     socket.on('game:state', ({ room }) => setRoom(room));
 
@@ -34,11 +61,13 @@ export function SocketProvider({ children }: { children: ReactNode }) {
 
   const createRoom = useCallback((playerName: string) => {
     setError(null);
+    pendingPlayerNameRef.current = playerName;
     socketRef.current?.emit('room:create', { playerName });
   }, []);
 
   const joinRoom = useCallback((code: string, playerName: string) => {
     setError(null);
+    pendingPlayerNameRef.current = playerName;
     socketRef.current?.emit('room:join', { code: code.toUpperCase(), playerName });
   }, []);
 
@@ -60,6 +89,10 @@ export function SocketProvider({ children }: { children: ReactNode }) {
 
   const placeCard = useCallback(() => {
     socketRef.current?.emit('game:place');
+  }, []);
+
+  const skipCard = useCallback(() => {
+    socketRef.current?.emit('game:skip');
   }, []);
 
   const notifyAudioStarted = useCallback(() => {
@@ -85,6 +118,7 @@ export function SocketProvider({ children }: { children: ReactNode }) {
     placeCard,
     notifyAudioStarted,
     onAudioPlay,
+    skipCard,
   };
 
   return <SocketContext.Provider value={value}>{children}</SocketContext.Provider>;

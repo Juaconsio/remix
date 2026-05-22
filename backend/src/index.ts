@@ -3,20 +3,25 @@ import { createServer } from 'http';
 import { Server } from 'socket.io';
 import cors from 'cors';
 import previewRouter from './routes/preview.js';
+import youtubeSearchRouter from './routes/youtubeSearch.js';
+import youtubePlaylistMapRouter from './routes/youtubePlaylistMap.js';
 import * as rm from './rooms/roomManager.js';
 
 const app = express();
 const httpServer = createServer(app);
 
 const CLIENT_URL = process.env.CLIENT_URL ?? 'http://localhost:3000';
+const corsOrigin = CLIENT_URL === '*' ? true : CLIENT_URL;
 
 const io = new Server(httpServer, {
-  cors: { origin: CLIENT_URL, methods: ['GET', 'POST'] },
+  cors: { origin: corsOrigin, methods: ['GET', 'POST'] },
 });
 
-app.use(cors({ origin: CLIENT_URL }));
+app.use(cors({ origin: corsOrigin }));
 app.use(express.json());
 app.use('/api/preview', previewRouter);
+app.use('/api/youtube/search', youtubeSearchRouter);
+app.use('/api/youtube/playlist-map', youtubePlaylistMapRouter);
 
 app.get('/health', (_req, res) => res.json({ ok: true }));
 
@@ -28,6 +33,17 @@ io.on('connection', (socket) => {
       socket.emit('room:joined', { room, yourPlayerId: socket.id });
     } catch (e) {
       socket.emit('room:error', { message: e instanceof Error ? e.message : 'Error al crear sala' });
+    }
+  });
+
+  socket.on('room:rejoin', ({ code, playerName }: { code: string; playerName: string }) => {
+    try {
+      const room = rm.reconnectPlayer(code, playerName, socket.id);
+      socket.join(room.code);
+      socket.emit('room:joined', { room, yourPlayerId: socket.id });
+      socket.to(room.code).emit('room:updated', { room });
+    } catch (e) {
+      socket.emit('room:error', { message: e instanceof Error ? e.message : 'Error al reconectar' });
     }
   });
 
@@ -99,6 +115,18 @@ io.on('connection', (socket) => {
     } catch {}
   });
 
+  socket.on('game:skip', () => {
+    const room = rm.getRoomByPlayer(socket.id);
+    if (!room) return;
+    const activePlayer = room.players[room.currentPlayerIndex];
+    if (activePlayer?.id !== socket.id) return;
+    if (room.status !== 'round_active') return;
+    try {
+      const updated = rm.skipCard(room.code);
+      io.to(room.code).emit('game:state', { room: updated });
+    } catch {}
+  });
+
   socket.on('game:audio:started', () => {
     const room = rm.getRoomByPlayer(socket.id);
     if (!room?.config.syncAudio || !room.currentCard) return;
@@ -129,4 +157,6 @@ io.on('connection', (socket) => {
 });
 
 const PORT = process.env.PORT ?? 4000;
-httpServer.listen(PORT, () => console.log(`Backend running on port ${PORT}`));
+httpServer.listen(PORT, () => {
+  console.log(`\n  Backend listo en http://localhost:${PORT}\n`);
+});

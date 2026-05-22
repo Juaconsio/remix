@@ -7,9 +7,10 @@ interface CardSlotProps {
   song: Song | null;
   isRevealed: boolean;
   isPlaying: boolean;
+  thumbnailUrl?: string;
 }
 
-export function CardSlot({ song, isRevealed, isPlaying }: CardSlotProps) {
+export function CardSlot({ song, isRevealed, isPlaying, thumbnailUrl }: CardSlotProps) {
   return (
     <div className="flex justify-center px-5 py-6">
       <div
@@ -45,9 +46,14 @@ export function CardSlot({ song, isRevealed, isPlaying }: CardSlotProps) {
 
           {/* Cara revelada — muestra info de la canción */}
           <div
-            className="absolute inset-0 rounded-3xl bg-surface border-2 border-accent flex flex-col items-center justify-center gap-3 p-6"
+            className="absolute inset-0 rounded-3xl bg-surface border-2 border-accent flex flex-col items-center justify-center gap-3 p-6 overflow-hidden"
             style={{ backfaceVisibility: 'hidden', transform: 'rotateY(180deg)' }}
           >
+            {thumbnailUrl && (
+              <div className="w-full rounded-xl overflow-hidden aspect-video mb-1">
+                <img src={thumbnailUrl} alt="" className="w-full h-full object-cover" />
+              </div>
+            )}
             {song && (
               <>
                 <p className="text-accent font-black text-6xl">{song.year}</p>
