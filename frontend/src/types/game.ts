@@ -37,6 +37,15 @@ export type GameStatus =
   | 'validating'
   | 'finished';
 
+export interface ActivePlayerState {
+  isLoading: boolean;
+  isPlaying: boolean;
+  progress: number;
+  error: string | null;
+  play: () => void;
+  stop: () => void;
+}
+
 export interface GameState {
   status: GameStatus;
   players: Player[];

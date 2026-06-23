@@ -1,22 +1,225 @@
 @import "tailwindcss";
 
-@theme inline {
-  --color-background: #0a0a0a;
-  --color-foreground: #f5f5f5;
-  --color-surface: #141414;
-  --color-border: #2a2a2a;
-  --color-accent: #f5a623;
-  --color-success: #22c55e;
-  --color-error: #ef4444;
-  --color-muted: #888888;
+/* Tie the dark: variant to [data-theme="dark"].
+   :is() gives specificity (0,1,0), so dark: utilities win over same-weight classes. */
+@variant dark (&:is([data-theme="dark"] *));
+
+/* ── Layer 2: Static tokens — NO inline, generate Tailwind utilities ── */
+@theme {
+  /* Theme-aware tokens — cascade resolves these via :root / [data-theme="dark"] */
+  --color-ink:     var(--cut-ink);
+  --color-surface: var(--cut-surface);
+  --color-bg:      var(--cut-bg);
+  --color-border:  var(--cut-border);
+  --color-muted:   var(--cut-muted);
+  --color-tint:    var(--cut-tint);
+
+  /* Static signal colors — fixed values, same in both themes */
+  --color-signal-rojo:      #e8341c;
+  --color-signal-naranja:   #ff5722;
+  --color-signal-magenta:   #ff2d8f;
+  --color-signal-cobalto:   #2540d6;
+  --color-signal-menta:     #2cd9b8;
+  --color-signal-lavanda:   #a78bfa;
+  --color-signal-tangerine: #ff6d00;
+
+  /* Status */
+  --color-success: #2cd9b8;
+  --color-error:   #e8341c;
+  --color-accent:  #ff5722;
+
+  /* Fixed neutrals — never invert with theme */
+  --color-ground: #0e0e0e;   /* always the deepest dark; diagonal, fixed-ink elements */
+  --color-cream:  #fff4ed;   /* always the warm light; buttons on dark diagonal */
+
+  /* Typography */
+  --font-display: 'Sora', sans-serif;
+  --font-mono:    'Space Mono', monospace;
+  --font-serif:   'Instrument Serif', serif;
 }
 
+/* ── Layer 3: Runtime song signal tokens — inline REQUIRED ── */
+/* These are injected via style prop at runtime; Tailwind cannot resolve them at build time */
+@theme inline {
+  --color-song-primary:    var(--song-primary);
+  --color-song-surface:    var(--song-surface);
+  --color-song-on-primary: var(--song-on-primary);
+}
+
+/* ── Layer 1: Runtime CSS custom properties ─────────────────────── */
+:root {
+  --cut-ink:     #0e0e0e;
+  --cut-surface: #fff4ed;
+  --cut-bg:      #fff4ed;
+  --cut-border:  rgba(14,14,14,0.18);
+  --cut-muted:   rgba(14,14,14,0.5);
+  --cut-tint:    rgba(14,14,14,0.05);
+
+  /* Song signal defaults — overridden inline per song component */
+  --song-primary:    #ff5722;
+  --song-surface:    #fff4ed;
+  --song-on-primary: #fff4ed;
+}
+
+[data-theme="dark"] {
+  --cut-ink:     #fff4ed;
+  --cut-surface: #1a1a1a;
+  --cut-bg:      #0e0e0e;
+  --cut-border:  rgba(255,244,237,0.18);
+  --cut-muted:   rgba(255,244,237,0.5);
+  --cut-tint:    rgba(255,244,237,0.05);
+}
+
+/* OS-level dark fallback — only when user hasn't set a preference */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --cut-ink:     #fff4ed;
+    --cut-surface: #1a1a1a;
+    --cut-bg:      #0e0e0e;
+    --cut-border:  rgba(255,244,237,0.18);
+    --cut-muted:   rgba(255,244,237,0.5);
+    --cut-tint:    rgba(255,244,237,0.05);
+  }
+}
+
+/* ── Global reset ───────────────────────────────────────────────── */
 html, body {
-  background-color: #0a0a0a;
-  color: #f5f5f5;
+  background: var(--cut-bg);
+  color: var(--cut-ink);
   min-height: 100%;
+  -webkit-font-smoothing: antialiased;
 }
 
 * {
   -webkit-tap-highlight-color: transparent;
+  box-sizing: border-box;
+}
+
+/* ── Global theme transition — declared once, never per component ── */
+*, *::before, *::after {
+  transition: background-color 150ms ease, border-color 150ms ease, color 150ms ease;
+}
+
+/* ── Cut typography utilities ───────────────────────────────────── */
+.font-display {
+  font-family: 'Sora', sans-serif;
+  font-weight: 800;
+  font-style: italic;
+}
+
+.font-mono-cut {
+  font-family: 'Space Mono', monospace;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+}
+
+.font-serif-accent {
+  font-family: 'Instrument Serif', serif;
+  font-style: italic;
+}
+
+/* ── Cut button primitives ──────────────────────────────────────── */
+.btn-primary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: 18px 22px;
+  background: var(--cut-surface);
+  color: var(--cut-ink);
+  border: none;
+  border-radius: 999px;
+  box-shadow: 0 0 0 1.5px var(--cut-ink);
+  font-family: 'Sora', sans-serif;
+  font-weight: 800;
+  font-style: italic;
+  font-size: 20px;
+  letter-spacing: -0.3px;
+  cursor: pointer;
+  transition: opacity 120ms;
+}
+
+.btn-primary:disabled { opacity: 0.35; }
+.btn-primary:active   { opacity: 0.75; }
+
+.btn-secondary {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  padding: 13px 22px;
+  background: transparent;
+  color: var(--cut-ink);
+  border: 2.5px solid var(--cut-ink);
+  border-radius: 999px;
+  font-family: 'Space Mono', monospace;
+  font-weight: 700;
+  font-size: 11px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: opacity 120ms;
+}
+
+.btn-secondary:disabled { opacity: 0.35; }
+.btn-secondary:active   { opacity: 0.75; }
+
+/* Secondary on dark (ink) backgrounds */
+.btn-secondary-light {
+  border-color: var(--cut-surface);
+  color: var(--cut-surface);
+}
+
+/* ── Cut input ──────────────────────────────────────────────────── */
+.input-cut {
+  width: 100%;
+  padding: 14px 20px;
+  background: transparent;
+  border: 1.5px solid var(--cut-border);
+  border-radius: 999px;
+  color: var(--cut-ink);
+  font-family: 'Sora', sans-serif;
+  font-style: italic;
+  font-size: 16px;
+  outline: none;
+}
+
+.input-cut::placeholder { opacity: 0.45; }
+.input-cut:focus        { border-color: var(--cut-ink); border-width: 2px; }
+
+
+/* ── Game CTA button — always cream on dark diagonal ────────────── */
+/* Intentionally theme-invariant: sits on the always-dark .cut-diagonal */
+.btn-game {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: 18px 22px;
+  background: var(--color-cream);
+  color: var(--color-ground);
+  border: none;
+  border-radius: 999px;
+  box-shadow: 0 0 0 1.5px var(--color-ground);
+  font-family: 'Sora', sans-serif;
+  font-weight: 800;
+  font-style: italic;
+  font-size: 20px;
+  letter-spacing: -0.3px;
+  cursor: pointer;
+  transition: opacity 120ms;
+}
+
+.btn-game:disabled { opacity: 0.35; cursor: default; }
+.btn-game:active   { opacity: 0.75; }
+
+/* ── prefers-reduced-motion ─────────────────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }

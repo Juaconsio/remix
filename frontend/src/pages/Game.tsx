@@ -4,26 +4,21 @@ import { useSocket } from '../hooks/useSocket';
 import { useGameAudio } from '../hooks/useGameAudio';
 import { PlayerHeader } from '../game/components/PlayerHeader';
 import { CardSlot } from '../game/components/CardSlot';
-import { AudioPlayer } from '../game/components/AudioPlayer';
-import { YouTubePlayer } from '../game/components/YouTubePlayer';
 import { Timeline } from '../game/components/Timeline';
-import { ValidationFeedback } from '../game/components/ValidationFeedback';
+import { RevealOverlay } from '../game/components/RevealOverlay';
+import { getSongSignal, DEFAULT_SIGNAL } from '../utils/songColor';
 
 export default function Game() {
   const navigate = useNavigate();
   const { room, myPlayerId, flipCard, selectPosition, placeCard, skipCard } = useSocket();
   const {
     provider,
-    activeIsPlaying,
+    activePlayer,
     hasListened,
     displayError,
     missingYouTubeVideo,
     thumbnailUrl,
     ytContainerRef,
-    handlePlay,
-    handleStop,
-    ytPlayer,
-    audio: audioState,
   } = useGameAudio(room, myPlayerId);
 
   useEffect(() => {
@@ -34,122 +29,173 @@ export default function Game() {
 
   if (!room) return null;
 
-  const currentPlayer = room.players[room.currentPlayerIndex] ?? null;
-  const myPlayer = room.players.find((p) => p.id === myPlayerId) ?? null;
+  const currentPlayer  = room.players[room.currentPlayerIndex] ?? null;
+  const myPlayer       = room.players.find((p) => p.id === myPlayerId) ?? null;
   const isActivePlayer = currentPlayer?.id === myPlayerId;
 
   if (!currentPlayer) return null;
 
   const isRevealed = room.status === 'validating';
+  const canListen  = hasListened || !!displayError || missingYouTubeVideo;
   const canConfirm =
     room.status === 'round_active' &&
     room.selectedPosition !== null &&
-    hasListened &&
+    canListen &&
     isActivePlayer;
 
+  const signal = room.currentCard
+    ? getSongSignal(room.currentCard.year)
+    : DEFAULT_SIGNAL;
+
+  const { primary, onPrimary } = signal;
+
+  const totalCards = (room as any).deckSize ?? 10;
+  const roundNum   = room.players.reduce((max, p) => Math.max(max, p.timeline.length), 0) + 1;
+
+  const playerProps = {
+    isLoading:    activePlayer.isLoading,
+    progress:     activePlayer.progress,
+    hookDuration: room.currentCard?.hookDuration ?? 15,
+    provider,
+    playerError:  displayError,
+    onPlay:       activePlayer.play,
+    onStop:       activePlayer.stop,
+  };
+
   return (
-    <main className="relative min-h-screen flex flex-col bg-background max-w-sm mx-auto">
-      <PlayerHeader player={currentPlayer} />
+    <main
+      className="relative min-h-dvh max-w-107.5 mx-auto overflow-hidden flex flex-col bg-song-primary dark:bg-bg"
+      style={{
+        '--song-primary': primary,
+        '--song-on-primary': onPrimary,
+      } as React.CSSProperties}
+    >
+      {/* Diagonal: transparent in light (bg is already vibrant), song-primary slash in dark */}
+      <div
+        className="absolute inset-0 pointer-events-none z-1 bg-transparent dark:bg-song-primary"
+        style={{ clipPath: 'polygon(0 56%, 100% 42%, 100% 100%, 0 100%)' }}
+      />
 
-      {!isActivePlayer && room.status === 'round_active' && (
-        <div className="px-5 py-2 bg-surface border-b border-border text-center text-sm text-muted">
-          Turno de <span className="text-foreground font-semibold">{currentPlayer.name}</span>
-        </div>
-      )}
+      {/* All content above the diagonal */}
+      <div className="relative z-2 flex-1 flex flex-col">
 
-      <div className="flex-1 overflow-y-auto pb-6">
+        {/* Header */}
+        <PlayerHeader
+          player={currentPlayer}
+          round={[roundNum, totalCards]}
+          signal={signal}
+        />
 
+        {/* Turn label */}
+        {room.status === 'round_active' && (
+          <div className="px-5 pt-0.5 pb-2">
+            {isActivePlayer ? (
+              <p className="font-serif-accent text-song-on-primary dark:text-ink" style={{ fontSize: 22, lineHeight: 1.1 }}>
+                ahora suena…
+              </p>
+            ) : (
+              <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full opacity-75 border-[1.5px] border-song-on-primary dark:border-ink">
+                <span className="font-mono-cut text-song-on-primary dark:text-ink" style={{ fontSize: 10 }}>
+                  turno de {currentPlayer.name}
+                </span>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Card */}
         {(room.status === 'round_active' || room.status === 'validating') && (
           <CardSlot
             song={room.currentCard}
             isRevealed={isRevealed}
-            isPlaying={activeIsPlaying}
+            isPlaying={activePlayer.isPlaying}
+            signal={signal}
             thumbnailUrl={isRevealed ? thumbnailUrl : undefined}
+            {...(room.status === 'round_active' && isActivePlayer && !missingYouTubeVideo
+              ? playerProps
+              : {})}
           />
         )}
 
-        {/* IFrame de YouTube siempre oculto: mostrar el vídeo revelaría la canción */}
-        <div
-          ref={ytContainerRef}
-          style={{ position: 'fixed', width: '200px', height: '200px', transform: 'translate(-9999px, -9999px)', pointerEvents: 'none', opacity: 0 }}
-        />
+        <div className="flex-1" />
 
-        {room.status === 'round_active' && (
-          provider === 'youtube' ? (
-            <YouTubePlayer
-              isPlaying={ytPlayer.isPlaying}
-              isLoading={ytPlayer.isLoading}
-              progress={ytPlayer.progress}
-              hookDuration={room.currentCard?.hookDuration ?? 15}
-              error={displayError}
-              onPlay={handlePlay}
-              onStop={ytPlayer.stop}
-            />
-          ) : (
-            <AudioPlayer
-              isPlaying={audioState.isPlaying}
-              isLoading={audioState.isLoading}
-              progress={audioState.progress}
-              error={displayError}
-              onPlay={handlePlay}
-              onStop={handleStop}
-            />
-          )
-        )}
-
-        <ValidationFeedback result={room.validationResult} songYear={room.currentCard?.year} />
-
+        {/* Timeline */}
         {room.status === 'round_active' && myPlayer && (
           <Timeline
             timeline={myPlayer.timeline}
             selectedPosition={room.selectedPosition}
             onSelectPosition={selectPosition}
             canInteract={isActivePlayer}
+            signal={signal}
           />
         )}
 
+        {/* CTAs — round active */}
         {room.status === 'round_active' && isActivePlayer && (
-          <div className="px-5 mt-2 flex flex-col gap-2">
-            {missingYouTubeVideo || (provider === 'youtube' && !!ytPlayer.error) ? (
+          <div className="flex flex-col gap-[10px] px-5 pb-8 pt-2">
+            {missingYouTubeVideo || !!displayError ? (
               <button
                 onClick={skipCard}
-                className="w-full py-4 rounded-2xl bg-surface border border-border text-foreground font-bold text-lg active:opacity-80"
+                className="btn-secondary btn-secondary-light dark:border-ink dark:text-ink"
               >
-                Saltar canción
+                saltar canción →
               </button>
             ) : (
               <button
-                onClick={() => { handleStop(); placeCard(); }}
+                onClick={() => { activePlayer.stop(); placeCard(); }}
                 disabled={!canConfirm}
-                className="w-full py-4 rounded-2xl bg-accent text-black font-bold text-lg disabled:opacity-30 transition-opacity active:opacity-80"
+                className="btn-game"
               >
-                {!hasListened
-                  ? 'Escucha la canción primero'
-                  : room.selectedPosition === null
-                  ? 'Elige una posición'
-                  : 'Confirmar posición'}
+                <span>
+                  {!canListen
+                    ? 'escucha la canción.'
+                    : room.selectedPosition === null
+                    ? 'elige posición.'
+                    : 'confirmar.'}
+                </span>
+                <span>→</span>
               </button>
             )}
           </div>
         )}
 
+        {/* CTA — setup */}
         {room.status === 'setup' && isActivePlayer && (
-          <div className="px-5 pt-12 flex flex-col items-center gap-4">
-            <button
-              onClick={flipCard}
-              className="w-full py-4 rounded-2xl bg-accent text-black font-bold text-lg active:opacity-80"
-            >
-              Sacar carta
+          <div className="px-5 pb-8 text-center">
+            <button onClick={flipCard} className="btn-game">
+              <span>sacar carta.</span>
+              <span>→</span>
             </button>
           </div>
         )}
 
         {room.status === 'setup' && !isActivePlayer && (
-          <div className="px-5 pt-12 text-center text-muted text-sm">
-            Esperando a que <span className="text-foreground font-semibold">{currentPlayer.name}</span> saque carta…
+          <div className="px-5 pb-8 pt-6 text-center">
+            <p className="font-mono-cut text-song-on-primary dark:text-ink" style={{ fontSize: 11, opacity: 0.6 }}>
+              esperando a {currentPlayer.name}…
+            </p>
           </div>
         )}
       </div>
+
+      {/* Full-screen reveal overlay */}
+      <RevealOverlay
+        song={room.currentCard}
+        isVisible={isRevealed}
+        result={room.validationResult}
+        signal={signal}
+      />
+
+      {/* YouTube iframe — always off-screen, never display:none */}
+      <div
+        ref={ytContainerRef}
+        className="fixed pointer-events-none opacity-0"
+        style={{
+          width: '200px',
+          height: '200px',
+          transform: 'translate(-9999px, -9999px)',
+        }}
+      />
     </main>
   );
 }

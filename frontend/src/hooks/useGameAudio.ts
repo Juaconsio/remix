@@ -1,35 +1,19 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { Room } from '../types/socket';
-import type { MusicProvider } from '../types/game';
+import type { ActivePlayerState, MusicProvider } from '../types/game';
 import { useSocket } from './useSocket';
 import { useAudio } from './useAudio';
 import { useYouTubePlayer } from './useYouTubePlayer';
 
 export interface UseGameAudioReturn {
   provider: MusicProvider;
-  activeIsPlaying: boolean;
-  activeProgress: number;
+  activePlayer: ActivePlayerState;
   hasListened: boolean;
   displayError: string | null;
   currentCardVideoId: string | undefined;
   missingYouTubeVideo: boolean;
   thumbnailUrl: string | undefined;
   ytContainerRef: React.RefObject<HTMLDivElement | null>;
-  handlePlay: () => void;
-  handleStop: () => void;
-  ytPlayer: {
-    isPlaying: boolean;
-    isLoading: boolean;
-    progress: number;
-    error: string | null;
-    stop: () => void;
-  };
-  audio: {
-    isPlaying: boolean;
-    isLoading: boolean;
-    progress: number;
-    error: string | null;
-  };
 }
 
 export function useGameAudio(room: Room | null, myPlayerId: string | null): UseGameAudioReturn {
@@ -119,42 +103,36 @@ export function useGameAudio(room: Room | null, myPlayerId: string | null): UseG
     if (room.config.syncAudio) notifyAudioStarted();
   }, [room, isActivePlayer, provider, ytPlayer, play, notifyAudioStarted]);
 
-  const handleStop = useCallback(() => {
-    stop();
-    ytPlayer.stop();
-  }, [stop, ytPlayer]);
-
   const currentCardVideoId = room?.currentCard
     ? (ytMapRef.current[room.currentCard.id] ?? room.currentCard.providerIds?.youtube)
     : undefined;
 
-  const activeProgress = provider === 'youtube' ? ytPlayer.progress : progress;
-  const activeIsPlaying = provider === 'youtube' ? (ytPlayer.isPlaying || ytPlayer.isLoading) : isPlaying;
   const displayError = providerError ?? (provider === 'youtube' ? ytPlayer.error : error);
   const missingYouTubeVideo = provider === 'youtube' && room?.status === 'round_active' && !currentCardVideoId;
   const thumbnailUrl = provider === 'youtube' && currentCardVideoId
     ? `https://img.youtube.com/vi/${currentCardVideoId}/mqdefault.jpg`
     : undefined;
 
+  const activePlayer = useMemo((): ActivePlayerState => {
+    const isYT = provider === 'youtube';
+    return {
+      isLoading: isYT ? ytPlayer.isLoading : isLoading,
+      isPlaying: isYT ? (ytPlayer.isPlaying || ytPlayer.isLoading) : isPlaying,
+      progress:  isYT ? ytPlayer.progress : progress,
+      error:     providerError ?? (isYT ? ytPlayer.error : error),
+      play:      handlePlay,
+      stop:      isYT ? ytPlayer.stop : stop,
+    };
+  }, [provider, ytPlayer, isLoading, isPlaying, progress, error, providerError, handlePlay, stop]);
+
   return {
     provider,
-    activeIsPlaying,
-    activeProgress,
-    hasListened: activeProgress > 0,
+    activePlayer,
+    hasListened: activePlayer.progress > 0,
     displayError,
     currentCardVideoId,
     missingYouTubeVideo,
     thumbnailUrl,
     ytContainerRef: ytPlayer.containerRef,
-    handlePlay,
-    handleStop,
-    ytPlayer: {
-      isPlaying: ytPlayer.isPlaying,
-      isLoading: ytPlayer.isLoading,
-      progress: ytPlayer.progress,
-      error: ytPlayer.error,
-      stop: ytPlayer.stop,
-    },
-    audio: { isPlaying, isLoading, progress, error },
   };
 }

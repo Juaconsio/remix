@@ -171,8 +171,10 @@ export function placeCard(code: string): Room {
   const player = room.players[room.currentPlayerIndex];
   const correct = isChronologicallyCorrect(player.timeline, room.currentCard, room.selectedPosition);
 
-  player.timeline.splice(room.selectedPosition, 0, room.currentCard);
-  if (correct) player.score += 1;
+  if (correct) {
+    player.timeline.splice(room.selectedPosition, 0, room.currentCard);
+    player.score += 1;
+  }
 
   room.validationResult = correct;
   room.status = 'validating';

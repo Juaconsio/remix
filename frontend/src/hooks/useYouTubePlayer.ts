@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { useYtPlayingStore } from '../store/ytPlayingStore';
 
 interface YouTubePlayerState {
   isPlaying: boolean;
@@ -40,6 +41,7 @@ function loadYTApi(): Promise<void> {
 
 export function useYouTubePlayer(): UseYouTubePlayerReturn {
   const containerRef = useRef<HTMLDivElement | null>(null);
+  const setYtPlaying = useYtPlayingStore((s) => s.setPlaying);
   const playerRef = useRef<YT.Player | null>(null);
   const stopTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const progressTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -86,7 +88,8 @@ export function useYouTubePlayer(): UseYouTubePlayerReturn {
     autoplayBlockedRef.current = false;
     playerRef.current?.pauseVideo();
     setState({ isPlaying: false, isLoading: false, progress: 0, error: null, errorCode: null });
-  }, [clearTimers]);
+    setYtPlaying(false);
+  }, [clearTimers, setYtPlaying]);
 
   // Crea el player YT apuntando al containerRef (iframe se inserta dentro del div)
   const createPlayer = useCallback((videoId: string, hookStart: number, hookDuration: number) => {
@@ -147,6 +150,7 @@ export function useYouTubePlayer(): UseYouTubePlayerReturn {
             e.target.unMute();
             e.target.setVolume(100);
             setState((s) => ({ ...s, isLoading: false, isPlaying: true }));
+            setYtPlaying(true);
             if (pendingTimerRef.current) {
               const { hookStart: hs, hookDuration: hd } = pendingTimerRef.current;
               pendingTimerRef.current = null;
@@ -156,6 +160,7 @@ export function useYouTubePlayer(): UseYouTubePlayerReturn {
           if (e.data === 0 /* ENDED */) {
             clearTimers();
             setState((s) => ({ ...s, isPlaying: false, isLoading: false, progress: 100 }));
+            setYtPlaying(false);
           }
         },
         onError: (e) => {
@@ -172,6 +177,7 @@ export function useYouTubePlayer(): UseYouTubePlayerReturn {
           clearTimers();
           autoplayBlockedRef.current = true;
           setState((s) => ({ ...s, isPlaying: false, isLoading: false }));
+          setYtPlaying(false);
         },
       },
     });

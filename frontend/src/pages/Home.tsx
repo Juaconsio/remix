@@ -1,38 +1,30 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { motion, useReducedMotion } from 'framer-motion';
 import { useSocket } from '../hooks/useSocket';
+import { SIGNAL_STRIPE } from '../utils/songColor';
+import { SettingsTrigger } from '../game/components/SettingsTrigger';
 
 export default function Home() {
   const navigate = useNavigate();
   const { room, error, createRoom, joinRoom, updateConfig, startGame } = useSocket();
+  const prefersReduced = useReducedMotion();
 
   const [playerName, setPlayerName] = useState('');
-  const [joinCode, setJoinCode] = useState('');
-  const [mode, setMode] = useState<'idle' | 'create' | 'join'>('idle');
-  const [devMode, setDevMode] = useState(false);
+  const [joinCode, setJoinCode]     = useState('');
+  const [mode, setMode]             = useState<'idle' | 'create' | 'join'>('idle');
+  const [devMode, setDevMode]       = useState(false);
 
-  // Flujo normal: ir al lobby
   useEffect(() => {
     if (!room || devMode) return;
     navigate(`/lobby/${room.code}`);
   }, [room, navigate, devMode]);
 
-  // Dev mode: configurar provider youtube + arrancar partida sin lobby
   useEffect(() => {
     if (!room || !devMode) return;
-    if (room.status === 'lobby') {
-      updateConfig({ provider: 'youtube' });
-      startGame();
-    }
-    if (room.status === 'setup') {
-      navigate(`/game/${room.code}`);
-    }
+    if (room.status === 'lobby') { updateConfig({ provider: 'youtube' }); startGame(); }
+    if (room.status === 'setup') navigate(`/game/${room.code}`);
   }, [room, navigate, devMode, updateConfig, startGame]);
-
-  function handleDevStart() {
-    setDevMode(true);
-    createRoom('Dev');
-  }
 
   function handleCreate(e: React.FormEvent) {
     e.preventDefault();
@@ -46,97 +38,168 @@ export default function Home() {
     joinRoom(joinCode, playerName.trim());
   }
 
+  const ease = 'backOut' as const;
+
   return (
-    <main className="min-h-screen flex flex-col items-center justify-center px-6 bg-background">
+    <main className="relative flex flex-col items-center justify-center px-6 bg-bg min-h-dvh">
+      <div className="absolute top-[14px] right-[14px]">
+        <SettingsTrigger />
+      </div>
+
       <div className="flex flex-col items-center gap-10 w-full max-w-sm">
 
-        <div className="flex flex-col items-center gap-3 text-center">
-          <span className="text-6xl">⏪</span>
-          <h1 className="text-5xl font-black tracking-tight text-white">Rewind</h1>
-          <p className="text-muted text-base">Escucha. Recuerda. Ordena.</p>
-        </div>
+        {/* Wordmark */}
+        <motion.div
+          className="flex flex-col items-center gap-4 text-center"
+          initial={{ opacity: 0, y: prefersReduced ? 0 : 32 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: prefersReduced ? 0.01 : 0.7, ease }}
+        >
+          <div className="flex w-48 h-2 rounded-full overflow-hidden">
+            {SIGNAL_STRIPE.map((c) => (
+              <div key={c} style={{ flex: 1, background: c }} />
+            ))}
+          </div>
 
+          <h1
+            className="font-display text-ink"
+            style={{ fontSize: 72, lineHeight: 0.9, letterSpacing: -4 }}
+          >
+            remix.
+          </h1>
+
+          <p
+            className="font-serif-accent text-ink"
+            style={{ fontSize: 18, opacity: 0.65 }}
+          >
+            Escucha. Recuerda. Ordena.
+          </p>
+        </motion.div>
+
+        {/* Buttons / forms */}
         {mode === 'idle' && (
-          <div className="flex flex-col gap-3 w-full">
-            <button
-              onClick={() => setMode('create')}
-              className="w-full py-4 rounded-2xl bg-accent text-black font-bold text-lg active:opacity-80"
-            >
-              Crear sala
+          <motion.div
+            className="flex flex-col gap-3 w-full"
+            initial={{ opacity: 0, y: prefersReduced ? 0 : 24 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: prefersReduced ? 0.01 : 0.6, delay: 0.08, ease }}
+          >
+            <button className="btn-primary" onClick={() => setMode('create')}>
+              crear sala. <span>→</span>
             </button>
-            <button
-              onClick={() => setMode('join')}
-              className="w-full py-4 rounded-2xl bg-surface border border-border text-foreground font-bold text-lg active:opacity-80"
-            >
-              Unirse a sala
+            <button className="btn-secondary" onClick={() => setMode('join')}>
+              unirme con código →
             </button>
             {import.meta.env.DEV && (
-              <button
-                onClick={handleDevStart}
-                className="w-full py-2 rounded-xl bg-surface border border-border text-muted text-sm active:opacity-80"
-              >
-                ⚡ Dev: solo YouTube
-              </button>
+              <>
+                <button
+                  onClick={() => { setDevMode(true); createRoom('Dev'); }}
+                  className="font-mono-cut text-ink bg-transparent border-none cursor-pointer p-2 underline underline-offset-4"
+                  style={{ fontSize: 10, letterSpacing: '0.15em', opacity: 0.4 }}
+                >
+                  ⚡ dev: youtube solo →
+                </button>
+                <a
+                  href="/playground"
+                  className="font-mono-cut text-ink bg-transparent border-none cursor-pointer p-2 underline underline-offset-4 text-center"
+                  style={{ fontSize: 10, letterSpacing: '0.15em', opacity: 0.4 }}
+                >
+                  🎨 playground →
+                </a>
+              </>
             )}
-          </div>
+          </motion.div>
         )}
 
         {mode === 'create' && (
-          <form onSubmit={handleCreate} className="flex flex-col gap-3 w-full">
+          <motion.form
+            onSubmit={handleCreate}
+            className="flex flex-col gap-3 w-full"
+            initial={{ opacity: 0, y: prefersReduced ? 0 : 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: prefersReduced ? 0.01 : 0.55, ease }}
+          >
             <input
               autoFocus
               type="text"
               value={playerName}
               onChange={(e) => setPlayerName(e.target.value)}
-              placeholder="Tu nombre"
+              placeholder="tu nombre"
               maxLength={20}
-              className="w-full bg-surface border border-border rounded-xl px-4 py-3 text-foreground placeholder:text-muted outline-none focus:border-accent"
+              className="input-cut"
             />
-            {error && <p className="text-error text-sm text-center">{error}</p>}
+            {error && (
+              <p
+                className="font-mono-cut text-error text-center"
+                style={{ fontSize: 11, letterSpacing: '0.12em' }}
+              >
+                {error}
+              </p>
+            )}
+            <button type="submit" disabled={!playerName.trim()} className="btn-primary">
+              crear sala. <span>→</span>
+            </button>
             <button
-              type="submit"
-              disabled={!playerName.trim()}
-              className="w-full py-4 rounded-2xl bg-accent text-black font-bold text-lg disabled:opacity-40 active:opacity-80"
+              type="button"
+              onClick={() => setMode('idle')}
+              className="font-mono-cut text-ink bg-transparent border-none cursor-pointer p-2 underline underline-offset-4"
+              style={{ fontSize: 11, letterSpacing: '0.15em', opacity: 0.5 }}
             >
-              Crear sala
+              ← volver
             </button>
-            <button type="button" onClick={() => setMode('idle')} className="text-muted text-sm text-center">
-              Volver
-            </button>
-          </form>
+          </motion.form>
         )}
 
         {mode === 'join' && (
-          <form onSubmit={handleJoin} className="flex flex-col gap-3 w-full">
+          <motion.form
+            onSubmit={handleJoin}
+            className="flex flex-col gap-3 w-full"
+            initial={{ opacity: 0, y: prefersReduced ? 0 : 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: prefersReduced ? 0.01 : 0.55, ease }}
+          >
             <input
               autoFocus
               type="text"
               value={playerName}
               onChange={(e) => setPlayerName(e.target.value)}
-              placeholder="Tu nombre"
+              placeholder="tu nombre"
               maxLength={20}
-              className="w-full bg-surface border border-border rounded-xl px-4 py-3 text-foreground placeholder:text-muted outline-none focus:border-accent"
+              className="input-cut"
             />
             <input
               type="text"
               value={joinCode}
               onChange={(e) => setJoinCode(e.target.value.toUpperCase())}
-              placeholder="Código de sala (ej: XKCD)"
+              placeholder="CÓDIGO"
               maxLength={4}
-              className="w-full bg-surface border border-border rounded-xl px-4 py-3 text-foreground placeholder:text-muted outline-none focus:border-accent tracking-widest uppercase font-mono text-center text-lg"
+              className="input-cut font-mono-cut text-center"
+              style={{ fontStyle: 'normal', letterSpacing: '0.3em', fontSize: 22 }}
             />
-            {error && <p className="text-error text-sm text-center">{error}</p>}
+            {error && (
+              <p
+                className="font-mono-cut text-error text-center"
+                style={{ fontSize: 11, letterSpacing: '0.12em' }}
+              >
+                {error}
+              </p>
+            )}
             <button
               type="submit"
               disabled={!playerName.trim() || joinCode.length < 4}
-              className="w-full py-4 rounded-2xl bg-accent text-black font-bold text-lg disabled:opacity-40 active:opacity-80"
+              className="btn-primary"
             >
-              Unirse
+              unirme. <span>→</span>
             </button>
-            <button type="button" onClick={() => setMode('idle')} className="text-muted text-sm text-center">
-              Volver
+            <button
+              type="button"
+              onClick={() => setMode('idle')}
+              className="font-mono-cut text-ink bg-transparent border-none cursor-pointer p-2 underline underline-offset-4"
+              style={{ fontSize: 11, letterSpacing: '0.15em', opacity: 0.5 }}
+            >
+              ← volver
             </button>
-          </form>
+          </motion.form>
         )}
 
       </div>

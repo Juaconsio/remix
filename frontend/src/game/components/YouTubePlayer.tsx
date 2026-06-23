@@ -1,74 +1,162 @@
+import { CutWaveform } from './CutWaveform';
+import type { SongSignal } from '../../utils/songColor';
+
 interface YouTubePlayerProps {
   isPlaying: boolean;
   isLoading: boolean;
-  progress: number;
+  progress: number; // 0–100
   hookDuration: number;
   error: string | null;
+  signal?: SongSignal;
   onPlay: () => void;
   onStop: () => void;
 }
 
-export function YouTubePlayer({ isPlaying, isLoading, progress, hookDuration, error, onPlay, onStop }: YouTubePlayerProps) {
-  const finished = !isPlaying && !isLoading && progress >= 100;
-  const pristine = !isPlaying && !isLoading && progress === 0;
+const monoStyle = {
+  fontFamily: "'Space Mono', monospace",
+  fontWeight: 700,
+  textTransform: 'uppercase' as const,
+  letterSpacing: '0.1em',
+};
 
-  const secondsLeft = isPlaying
-    ? Math.ceil(hookDuration * (1 - progress / 100))
-    : null;
+export function YouTubePlayer({
+  isPlaying,
+  isLoading,
+  progress,
+  hookDuration,
+  error,
+  signal,
+  onPlay,
+  onStop,
+}: YouTubePlayerProps) {
+  const primary   = signal?.primary   ?? '#ff5722';
+  const onPrimary = signal?.onPrimary ?? '#fff4ed';
 
-  function getButtonIcon() {
-    if (isLoading) return '⏳';
-    if (finished) return '↺';
-    if (isPlaying) return '⏸';
-    return '▶';
-  }
+  const finished  = !isPlaying && !isLoading && progress >= 100;
+  const elapsed   = Math.round((progress / 100) * hookDuration);
+  const remaining = Math.max(0, hookDuration - elapsed);
 
-  function getStatusText() {
-    if (isLoading) return 'Cargando…';
-    if (isPlaying && secondsLeft !== null) return `${secondsLeft}s`;
-    if (finished) return 'Escuchar de nuevo';
-    if (pristine) return `Clip: ${hookDuration}s`;
-    return null;
-  }
-
-  const statusText = getStatusText();
+  // SVG countdown ring
+  const R     = 22;
+  const circ  = 2 * Math.PI * R;
+  const dash  = circ * (1 - (isPlaying ? progress / 100 : 0));
 
   return (
-    <div className="px-5 py-3 flex flex-col gap-3">
-      {error && <p className="text-error text-sm text-center">{error}</p>}
+    <div style={{ padding: '12px 20px' }}>
+      {error && (
+        <p style={{ ...monoStyle, fontSize: 10, color: '#e8341c', textAlign: 'center', marginBottom: 10 }}>
+          {error}
+        </p>
+      )}
 
-      <div className="flex items-center gap-3">
-        {/* Botón play/pause/replay con pulso durante reproducción */}
-        <div className="relative shrink-0">
-          {isPlaying && (
-            <span className="absolute inset-0 rounded-full bg-accent opacity-40 animate-ping" />
-          )}
+      <div
+        style={{
+          background: primary,
+          borderRadius: 20,
+          padding: '16px 18px',
+          display: 'flex',
+          alignItems: 'center',
+          gap: 14,
+        }}
+      >
+        {/* Play disc with countdown ring */}
+        <div style={{ position: 'relative', flexShrink: 0, width: 56, height: 56 }}>
+          {/* SVG ring */}
+          <svg
+            width={56}
+            height={56}
+            style={{ position: 'absolute', inset: 0, transform: 'rotate(-90deg)' }}
+          >
+            <circle
+              cx={28} cy={28} r={R}
+              fill="none"
+              stroke={onPrimary}
+              strokeWidth={2.5}
+              strokeOpacity={0.25}
+            />
+            {isPlaying && (
+              <circle
+                cx={28} cy={28} r={R}
+                fill="none"
+                stroke={onPrimary}
+                strokeWidth={2.5}
+                strokeDasharray={circ}
+                strokeDashoffset={dash}
+                strokeLinecap="round"
+                style={{ transition: 'stroke-dashoffset 300ms linear' }}
+              />
+            )}
+          </svg>
+
           <button
             onClick={isPlaying ? onStop : onPlay}
             disabled={isLoading}
-            className="relative w-12 h-12 rounded-full bg-accent flex items-center justify-center text-black font-bold text-xl active:scale-95 transition-transform disabled:opacity-50"
+            style={{
+              position: 'absolute',
+              inset: 5,
+              borderRadius: '50%',
+              background: onPrimary,
+              color: primary,
+              border: 'none',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              cursor: isLoading ? 'default' : 'pointer',
+              opacity: isLoading ? 0.6 : 1,
+              transition: 'transform 100ms',
+            }}
+            onPointerDown={(e) => { (e.currentTarget.style.transform = 'scale(0.9)'); }}
+            onPointerUp={(e)   => { (e.currentTarget.style.transform = 'scale(1)'); }}
+            onPointerLeave={(e) => { (e.currentTarget.style.transform = 'scale(1)'); }}
           >
-            {getButtonIcon()}
+            {isLoading ? (
+              <span
+                style={{
+                  width: 16,
+                  height: 16,
+                  border: `2px solid ${primary}`,
+                  borderTopColor: 'transparent',
+                  borderRadius: '50%',
+                  display: 'block',
+                  animation: 'spin 0.7s linear infinite',
+                }}
+              />
+            ) : finished ? (
+              <span style={{ fontSize: 18, lineHeight: 1 }}>↺</span>
+            ) : isPlaying ? (
+              <span style={{ fontSize: 16, lineHeight: 1 }}>⏸</span>
+            ) : (
+              <span style={{ fontSize: 18, lineHeight: 1 }}>▶</span>
+            )}
           </button>
         </div>
 
-        <div className="flex-1 flex flex-col gap-1">
-          {/* Barra de progreso */}
-          <div className="h-2 bg-border rounded-full overflow-hidden">
-            <div
-              className={`h-full rounded-full transition-all duration-100 ${isPlaying || isLoading ? 'bg-accent' : finished ? 'bg-accent/40' : 'bg-border'}`}
-              style={{ width: `${isLoading ? 0 : progress}%` }}
-            />
+        {/* Waveform + countdown */}
+        <div style={{ flex: 1, minWidth: 0, color: onPrimary }}>
+          <CutWaveform progress={progress} height={28} color={onPrimary} />
+          <div
+            style={{
+              ...monoStyle,
+              fontSize: 9,
+              color: onPrimary,
+              display: 'flex',
+              justifyContent: 'space-between',
+              marginTop: 6,
+            }}
+          >
+            <span>
+              {String(Math.floor(elapsed / 60)).padStart(2, '0')}:{String(elapsed % 60).padStart(2, '0')}
+            </span>
+            {isPlaying ? (
+              <span style={{ color: onPrimary }}>−{remaining}s</span>
+            ) : (
+              <span style={{ opacity: 0.55 }}>clip · {hookDuration}s</span>
+            )}
           </div>
-
-          {/* Texto de estado */}
-          {statusText && (
-            <p className={`text-xs ${isPlaying ? 'text-accent font-semibold' : 'text-muted'}`}>
-              {statusText}
-            </p>
-          )}
         </div>
       </div>
+
+      <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
     </div>
   );
 }
