@@ -1,22 +1,18 @@
+# Build de producción en un solo servicio (mismo modelo que Railway).
+# El backend sirve el frontend compilado y expone Socket.io en el mismo origen.
+#   docker compose up --build   → http://localhost:4000
 services:
-  backend:
-    build: ./backend
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
     ports:
       - "4000:4000"
     environment:
       PORT: 4000
-      CLIENT_URL: http://localhost:3000
+      NODE_ENV: production
+      CLIENT_URL: "*"
+      YOUTUBE_API_KEY: ${YOUTUBE_API_KEY:-}
       SPOTIFY_CLIENT_ID: ${SPOTIFY_CLIENT_ID:-}
       SPOTIFY_CLIENT_SECRET: ${SPOTIFY_CLIENT_SECRET:-}
-    restart: unless-stopped
-
-  frontend:
-    build:
-      context: ./frontend
-      args:
-        VITE_BACKEND_URL: http://localhost:4000
-    ports:
-      - "3000:80"
-    depends_on:
-      - backend
     restart: unless-stopped

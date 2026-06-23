@@ -1,5 +1,5 @@
-import type { Room, RoomPlayer, RoomConfig } from './types';
-import { allSongs as songs } from '../songs';
+import type { Room, RoomPlayer, RoomConfig } from './types.js';
+import { allSongs as songs } from '../songs.js';
 import { readFileSync, writeFileSync } from 'fs';
 import { join } from 'path';
 

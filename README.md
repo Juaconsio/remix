@@ -1,36 +1,51 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Remix — juego de timeline musical
 
-## Getting Started
+Monorepo **Vite + Express/Socket.io** (multijugador en tiempo real). Adivina el orden
+cronológico de canciones por su año. No es Next.js.
 
-First, run the development server:
-
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+```
+frontend/   React + Vite + TypeScript   (dev :3000)
+backend/    Express + Socket.io + TS     (dev :4000, sirve el front en producción)
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Desarrollo
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+```bash
+# Con Docker (ambos servicios)
+pnpm dev            # docker compose -f docker-compose.dev.yml up
+pnpm dev:build      # primera vez o tras cambios en Dockerfile
+pnpm down
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+# Sin Docker
+cd backend && pnpm dev     # :4000 (tsx watch)
+cd frontend && pnpm dev    # :3000 (Vite HMR, proxea /api y /socket.io al backend)
+```
 
-## Learn More
+Copia `.env.example` → `backend/.env` antes del primer arranque. El proveedor por
+defecto (**Deezer**) no necesita claves; YouTube/Spotify sí.
 
-To learn more about Next.js, take a look at the following resources:
+## Producción — un solo servicio
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+En producción el backend Express sirve el frontend compilado (`./public`) y expone
+Socket.io en el **mismo origen**, así que es un único contenedor sin CORS ni proxy.
+El cliente conecta a `window.location.origin` (no hace falta `VITE_BACKEND_URL`).
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+```bash
+# Probar el build de producción localmente
+docker compose up --build      # → http://localhost:4000
+```
 
-## Deploy on Vercel
+### Desplegar en Railway (o Render / Fly.io)
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+1. Conecta el repo en [railway.app](https://railway.app) → *Deploy from GitHub*.
+2. Railway detecta el [`Dockerfile`](./Dockerfile) raíz (config en [`railway.json`](./railway.json),
+   healthcheck en `/health`).
+3. Variables de entorno (Settings → Variables):
+   - `NODE_ENV=production`
+   - `YOUTUBE_API_KEY`, `SPOTIFY_CLIENT_ID`, `SPOTIFY_CLIENT_SECRET` (opcionales)
+   - `PORT` la inyecta Railway automáticamente; el server la respeta.
+4. Deploy. La URL pública sirve front + API + WebSocket juntos.
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+> **Nota de escala:** el estado de las salas vive en memoria (una sola instancia).
+> Para playtests es suficiente. Para escalar a varias réplicas habría que mover el
+> estado a Redis con `@socket.io/redis-adapter`.

@@ -2,15 +2,22 @@ import express from 'express';
 import { createServer } from 'http';
 import { Server } from 'socket.io';
 import cors from 'cors';
+import path from 'path';
+import { existsSync } from 'fs';
+import { fileURLToPath } from 'url';
 import previewRouter from './routes/preview.js';
 import youtubeSearchRouter from './routes/youtubeSearch.js';
 import youtubePlaylistMapRouter from './routes/youtubePlaylistMap.js';
 import * as rm from './rooms/roomManager.js';
 
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+
 const app = express();
 const httpServer = createServer(app);
 
-const CLIENT_URL = process.env.CLIENT_URL ?? 'http://localhost:3000';
+// En producción servimos el front desde el mismo origen, así que reflejamos
+// cualquier origin (no hay cross-origin real). En dev mantenemos localhost:3000.
+const CLIENT_URL = process.env.CLIENT_URL ?? (process.env.NODE_ENV === 'production' ? '*' : 'http://localhost:3000');
 const corsOrigin = CLIENT_URL === '*' ? true : CLIENT_URL;
 
 const io = new Server(httpServer, {
@@ -24,6 +31,19 @@ app.use('/api/youtube/search', youtubeSearchRouter);
 app.use('/api/youtube/playlist-map', youtubePlaylistMapRouter);
 
 app.get('/health', (_req, res) => res.json({ ok: true }));
+
+// Servir el frontend compilado (modelo de un solo servicio en producción).
+// En dev el directorio no existe, así que se omite y Vite sirve el front en :3000.
+const clientDist = process.env.CLIENT_DIST ?? path.resolve(__dirname, '../public');
+if (existsSync(clientDist)) {
+  app.use(express.static(clientDist));
+  // Fallback SPA: toda ruta que no sea API/socket/health devuelve index.html
+  // para que React Router maneje el enrutado en el cliente.
+  app.get(/^(?!\/api|\/socket\.io|\/health).*/, (_req, res) => {
+    res.sendFile(path.join(clientDist, 'index.html'));
+  });
+  console.log(`  Sirviendo frontend desde ${clientDist}`);
+}
 
 io.on('connection', (socket) => {
   socket.on('room:create', ({ playerName }) => {

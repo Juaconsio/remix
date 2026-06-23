@@ -1,0 +1,14 @@
+**/node_modules
+**/dist
+backend/dev-rooms.json
+.git
+.github
+.vscode
+.claude
+.env
+**/.env
+*.md
+docker-compose*.yml
+frontend/Dockerfile
+backend/Dockerfile
+frontend/nginx.conf

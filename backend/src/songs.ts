@@ -1,4 +1,4 @@
-import type { Song } from './types';
+import type { Song } from './types.js';
 
 export const songs: Song[] = [
   // 60s
