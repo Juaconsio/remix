@@ -5,6 +5,7 @@ export interface RoomPlayer {
   name: string;
   timeline: Song[];
   score: number;
+  connected: boolean;
 }
 
 export interface RoomConfig {

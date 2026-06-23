@@ -10,6 +10,7 @@ const Playground = lazy(() => import('./pages/Playground'));
 import { useThemeStore } from './store/themeStore';
 import { useYtPlayingStore } from './store/ytPlayingStore';
 import { SettingsPanel } from './game/components/SettingsPanel';
+import { ConnectionBanner } from './game/components/ConnectionBanner';
 
 const MEDIA_ACTIONS: MediaSessionAction[] = [
   'play', 'pause', 'stop', 'seekbackward', 'seekforward', 'previoustrack', 'nexttrack',
@@ -62,6 +63,7 @@ export default function App() {
     <>
       <ThemeApplier />
       <MediaSessionSuppressor isPlaying={useYtPlayingStore((s) => s.isPlaying)} />
+      <ConnectionBanner />
       <SettingsPanel />
       <Routes>
         <Route path="/" element={<Home />} />

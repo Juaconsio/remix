@@ -34,7 +34,7 @@ const TIMELINE_SONGS: Song[] = [
   { ...BASE_SONG, id: 't3', title: 'Teen Spirit',      artist: 'Nirvana',     year: 1991 },
 ];
 
-const MOCK_PLAYER: RoomPlayer = { id: 'p1', name: 'jugador', timeline: [], score: 3 };
+const MOCK_PLAYER: RoomPlayer = { id: 'p1', name: 'jugador', timeline: [], score: 3, connected: true };
 
 // ── Helpers ──────────────────────────────────────────────────────────
 

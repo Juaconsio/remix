@@ -17,7 +17,7 @@ function luminance(hex: string) {
 
 export default function Results() {
   const navigate = useNavigate();
-  const { room } = useSocket();
+  const { room, leaveRoom } = useSocket();
   const prefersReduced = useReducedMotion() ?? false;
 
   useEffect(() => {
@@ -133,7 +133,7 @@ export default function Results() {
 
         {/* CTA */}
         <button
-          onClick={() => navigate('/')}
+          onClick={() => { leaveRoom(); navigate('/'); }}
           className="btn-primary mt-8"
         >
           <span>nueva partida.</span>

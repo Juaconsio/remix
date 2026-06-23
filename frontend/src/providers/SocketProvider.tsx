@@ -6,9 +6,9 @@ import type { ServerToClientEvents, ClientToServerEvents, Room, RoomConfig } fro
 type AppSocket = Socket<ServerToClientEvents, ClientToServerEvents>;
 
 const BACKEND_URL = import.meta.env.VITE_BACKEND_URL ?? window.location.origin;
-const DEV_SESSION_KEY = 'dev_room_session';
+const SESSION_KEY = 'room_session';
 
-interface DevSession { roomCode: string; playerName: string; }
+interface RoomSession { roomCode: string; playerName: string; }
 
 export function SocketProvider({ children }: { children: ReactNode }) {
   const socketRef = useRef<AppSocket | null>(null);
@@ -25,16 +25,16 @@ export function SocketProvider({ children }: { children: ReactNode }) {
     socket.on('connect', () => {
       setConnected(true);
       setError(null);
-      if (import.meta.env.DEV) {
-        const raw = sessionStorage.getItem(DEV_SESSION_KEY);
-        if (raw) {
-          try {
-            const session: DevSession = JSON.parse(raw);
-            pendingPlayerNameRef.current = session.playerName;
-            socket.emit('room:rejoin', { code: session.roomCode, playerName: session.playerName });
-          } catch {
-            sessionStorage.removeItem(DEV_SESSION_KEY);
-          }
+      // Al (re)conectar, si hay una sesión guardada intentamos volver a la sala.
+      // Cubre refresh de página y cortes de red durante la partida.
+      const raw = sessionStorage.getItem(SESSION_KEY);
+      if (raw) {
+        try {
+          const session: RoomSession = JSON.parse(raw);
+          pendingPlayerNameRef.current = session.playerName;
+          socket.emit('room:rejoin', { code: session.roomCode, playerName: session.playerName });
+        } catch {
+          sessionStorage.removeItem(SESSION_KEY);
         }
       }
     });
@@ -43,15 +43,15 @@ export function SocketProvider({ children }: { children: ReactNode }) {
       setRoom(room);
       setMyPlayerId(yourPlayerId);
       setError(null);
-      if (import.meta.env.DEV && pendingPlayerNameRef.current) {
-        const session: DevSession = { roomCode: room.code, playerName: pendingPlayerNameRef.current };
-        sessionStorage.setItem(DEV_SESSION_KEY, JSON.stringify(session));
+      if (pendingPlayerNameRef.current) {
+        const session: RoomSession = { roomCode: room.code, playerName: pendingPlayerNameRef.current };
+        sessionStorage.setItem(SESSION_KEY, JSON.stringify(session));
         pendingPlayerNameRef.current = null;
       }
     });
     socket.on('room:error', ({ message }) => {
       setError(message);
-      if (import.meta.env.DEV) sessionStorage.removeItem(DEV_SESSION_KEY);
+      sessionStorage.removeItem(SESSION_KEY);
     });
     socket.on('room:updated', ({ room }) => setRoom(room));
     socket.on('game:state', ({ room }) => setRoom(room));
@@ -69,6 +69,16 @@ export function SocketProvider({ children }: { children: ReactNode }) {
     setError(null);
     pendingPlayerNameRef.current = playerName;
     socketRef.current?.emit('room:join', { code: code.toUpperCase(), playerName });
+  }, []);
+
+  // Abandona la sala actual: limpia la sesión guardada para que un reconnect
+  // posterior no arrastre de vuelta a una partida vieja, y resetea el estado.
+  const leaveRoom = useCallback(() => {
+    sessionStorage.removeItem(SESSION_KEY);
+    pendingPlayerNameRef.current = null;
+    setRoom(null);
+    setMyPlayerId(null);
+    setError(null);
   }, []);
 
   const updateConfig = useCallback((config: Partial<RoomConfig>) => {
@@ -111,6 +121,7 @@ export function SocketProvider({ children }: { children: ReactNode }) {
     connected,
     createRoom,
     joinRoom,
+    leaveRoom,
     updateConfig,
     startGame,
     flipCard,

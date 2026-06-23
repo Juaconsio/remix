@@ -38,7 +38,14 @@ io.on('connection', (socket) => {
 
   socket.on('room:rejoin', ({ code, playerName }: { code: string; playerName: string }) => {
     try {
-      const room = rm.reconnectPlayer(code, playerName, socket.id);
+      let room;
+      try {
+        room = rm.reconnectPlayer(code, playerName, socket.id);
+      } catch {
+        // El jugador ya no está en la sala (p. ej. salió del lobby): reintentar
+        // como join normal. Si la partida ya empezó, joinRoom lanzará el error.
+        room = rm.joinRoom(code, socket.id, playerName);
+      }
       socket.join(room.code);
       socket.emit('room:joined', { room, yourPlayerId: socket.id });
       socket.to(room.code).emit('room:updated', { room });

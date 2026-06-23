@@ -9,6 +9,7 @@ export interface SocketContextValue {
   connected: boolean;
   createRoom: (playerName: string) => void;
   joinRoom: (code: string, playerName: string) => void;
+  leaveRoom: () => void;
   updateConfig: (config: Partial<RoomConfig>) => void;
   startGame: () => void;
   flipCard: () => void;

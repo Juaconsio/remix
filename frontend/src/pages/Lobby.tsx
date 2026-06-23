@@ -91,10 +91,11 @@ export default function Lobby() {
             return (
               <li
                 key={p.id}
-                className="flex items-center gap-3 py-[10px] px-[14px] rounded-full"
+                className="flex items-center gap-3 py-[10px] px-[14px] rounded-full transition-opacity"
                 style={{
                   border: isMe ? `2px solid ${signal.primary}` : '1.5px solid var(--cut-border)',
                   background: isMe ? signal.surface : 'transparent',
+                  opacity: p.connected ? 1 : 0.4,
                 }}
               >
                 <div
@@ -110,6 +111,15 @@ export default function Lobby() {
                 >
                   {p.name}
                 </span>
+
+                {!p.connected && (
+                  <span
+                    className="font-mono-cut rounded-full"
+                    style={{ fontSize: 9, padding: '3px 10px', border: '1px solid var(--cut-border)', opacity: 0.7 }}
+                  >
+                    offline
+                  </span>
+                )}
 
                 {p.id === room.hostId && (
                   <span
