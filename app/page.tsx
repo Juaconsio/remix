@@ -12,12 +12,23 @@ export default function HomeScreen() {
           </p>
         </div>
 
-        <Link
-          href="/setup"
-          className="w-full py-4 rounded-2xl bg-accent text-black font-bold text-lg text-center transition-opacity active:opacity-80"
-        >
-          Nueva partida
-        </Link>
+        <div className="flex flex-col gap-3 w-full">
+          <Link
+            href="/setup"
+            className="w-full px-5 py-4 rounded-2xl bg-accent text-black text-center transition-opacity active:opacity-80"
+          >
+            <span className="block font-bold text-lg">Clásico</span>
+            <span className="block text-sm opacity-80">Línea de tiempo · ordena por año</span>
+          </Link>
+
+          <Link
+            href="/rosco/setup"
+            className="w-full px-5 py-4 rounded-2xl border border-border bg-surface text-foreground text-center transition-opacity active:opacity-80"
+          >
+            <span className="block font-bold text-lg">Rosco musical</span>
+            <span className="block text-sm text-muted">Adivina la canción de cada letra</span>
+          </Link>
+        </div>
       </div>
     </main>
   );

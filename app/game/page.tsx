@@ -31,7 +31,7 @@ export default function GameScreen() {
   const provider = useProviderStore((s) => s.provider);
   const { isPlaying, isLoading, progress, error, play, stop } = useAudio();
   const ytPlayer = useYouTubePlayer();
-  const [providerError, setProviderError] = useState<string | null>(null);
+  const [providerError, setProviderError] = useState<{ cardId: string; msg: string } | null>(null);
   const nextTurnTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const currentPlayer = players[currentPlayerIndex] ?? null;
@@ -55,11 +55,6 @@ export default function GameScreen() {
     };
   }, [status, nextTurn, stop, ytPlayer]);
 
-  // Limpiar error de proveedor al cambiar de carta
-  useEffect(() => {
-    setProviderError(null);
-  }, [currentCard]);
-
   function handlePlay() {
     if (!currentCard) return;
     setProviderError(null);
@@ -67,7 +62,7 @@ export default function GameScreen() {
     if (provider === 'youtube') {
       const videoId = currentCard.providerIds?.youtube;
       if (!videoId) {
-        setProviderError('Esta canción no tiene vídeo de YouTube configurado');
+        setProviderError({ cardId: currentCard.id, msg: 'Esta canción no tiene vídeo de YouTube configurado' });
         return;
       }
       ytPlayer.play(videoId, currentCard.hookStart, currentCard.hookDuration);
@@ -94,7 +89,8 @@ export default function GameScreen() {
   const activeIsPlaying = provider === 'youtube' ? ytPlayer.isPlaying : isPlaying;
   const hasListened = activeProgress > 0;
   const canConfirm = status === 'round_active' && selectedPosition !== null && hasListened;
-  const displayError = providerError ?? (provider === 'youtube' ? ytPlayer.error : error);
+  const activeProviderError = providerError?.cardId === currentCard?.id ? providerError?.msg ?? null : null;
+  const displayError = activeProviderError ?? (provider === 'youtube' ? ytPlayer.error : error);
 
   return (
     <main className="min-h-screen flex flex-col bg-background max-w-sm mx-auto">
