@@ -1,9 +1,10 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, useReducedMotion } from 'framer-motion';
 import { useSocket } from '../hooks/useSocket';
 import { SIGNAL_STRIPE } from '../utils/songColor';
 import { SettingsTrigger } from '../game/components/SettingsTrigger';
+import type { GameMode } from '../types/socket';
 
 export default function Home() {
   const navigate = useNavigate();
@@ -13,7 +14,8 @@ export default function Home() {
   const [playerName, setPlayerName] = useState('');
   const [joinCode, setJoinCode]     = useState('');
   const [mode, setMode]             = useState<'idle' | 'create' | 'join'>('idle');
-  const [devMode, setDevMode]       = useState(false);
+  const [devMode, setDevMode]       = useState<GameMode | null>(null);
+  const devStarted                  = useRef(false);
 
   useEffect(() => {
     if (!room || devMode) return;
@@ -22,8 +24,15 @@ export default function Home() {
 
   useEffect(() => {
     if (!room || !devMode) return;
-    if (room.status === 'lobby') { updateConfig({ provider: 'youtube' }); startGame(); }
+    // room:config rebota con la sala aún en lobby: sin la guarda saldría un
+    // segundo game:start que rehace el reparto.
+    if (room.status === 'lobby' && !devStarted.current) {
+      devStarted.current = true;
+      updateConfig({ provider: 'youtube', mode: devMode, roscoSubMode: 'turnos' });
+      startGame();
+    }
     if (room.status === 'setup') navigate(`/game/${room.code}`);
+    if (room.status === 'round_active' && devMode === 'rosco') navigate(`/rosco/${room.code}`);
   }, [room, navigate, devMode, updateConfig, startGame]);
 
   function handleCreate(e: React.FormEvent) {
@@ -93,11 +102,18 @@ export default function Home() {
             {import.meta.env.DEV && (
               <>
                 <button
-                  onClick={() => { setDevMode(true); createRoom('Dev'); }}
+                  onClick={() => { setDevMode('classic'); createRoom('Dev'); }}
                   className="font-mono-cut text-ink bg-transparent border-none cursor-pointer p-2 underline underline-offset-4"
                   style={{ fontSize: 10, letterSpacing: '0.15em', opacity: 0.4 }}
                 >
                   ⚡ dev: youtube solo →
+                </button>
+                <button
+                  onClick={() => { setDevMode('rosco'); createRoom('Dev'); }}
+                  className="font-mono-cut text-ink bg-transparent border-none cursor-pointer p-2 underline underline-offset-4"
+                  style={{ fontSize: 10, letterSpacing: '0.15em', opacity: 0.4 }}
+                >
+                  ⚡ dev: rosco solo →
                 </button>
                 <a
                   href="/playground"
