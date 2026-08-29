@@ -10,8 +10,8 @@ Monorepo **Vite + Express**, NOT Next.js.
 remix/
 ├── frontend/          ← React + Vite + TypeScript (port 3000)
 │   └── src/
-│       ├── pages/     ← Home, Lobby, Game, Results (react-router-dom)
-│       ├── game/components/  ← AudioPlayer, YouTubePlayer, CardSlot, Timeline, …
+│       ├── pages/     ← Home, Lobby, Game, Rosco, Results (react-router-dom)
+│       ├── game/components/  ← AudioPlayer, YouTubePlayer, CardSlot, Timeline, RoscoBoard, RoscoControls, …
 │       ├── hooks/     ← useAudio, useYouTubePlayer, useSocket
 │       ├── providers/ ← SocketProvider (Socket.io context)
 │       ├── store/     ← providerStore (Zustand, persists active music provider)
@@ -22,7 +22,8 @@ remix/
 │       ├── songs.ts         ← Song catalogue (in-memory)
 │       ├── types.ts         ← Song, MusicProvider (mirrored in frontend/src/types/game.ts)
 │       ├── routes/          ← preview.ts, youtubeSearch.ts, youtubePlaylistMap.ts
-│       └── rooms/           ← roomManager.ts (all game logic), types.ts (Room, RoomPlayer, RoomConfig)
+│       └── rooms/           ← roomManager.ts (all game logic), rosco.ts (rosco rules),
+│                               roscoPacks.ts, publicRoom.ts (answer redaction), types.ts
 └── docker-compose.dev.yml
 ```
 
@@ -49,13 +50,31 @@ cd backend && pnpm build   # tsc
 
 Copy `.env.example` → `backend/.env` before first run.
 
-## Game flow
+## Game modes
+
+`config.mode` picks the game: `classic` (timeline) or `rosco` (Pasapalabra-style letters).
+The lobby is shared; `game:start` branches and the client routes to `/game/:code` or `/rosco/:code`.
+
+## Game flow — classic
 
 Turn order: `lobby` → `setup` → `round_active` → `validating` → (next turn or) `finished`.
 
 Each turn: active player calls `game:flip` (draws card) → `game:select` (pick timeline position) → `game:place` (confirm). Server auto-advances to next turn after 2.5s. Players can also call `game:skip` to discard the current card.
 
 `game:audio:started` (active player) triggers `game:audio:play` to spectators when `syncAudio` is enabled in room config.
+
+## Game flow — rosco
+
+`game:start` builds `room.rosco.boards` from `roscoPacks.ts`: one shared board in `paralelo`,
+one per player in `turnos`. The room sits in `round_active` until every board is done.
+
+The host both plays and judges: only they emit `rosco:*`, and only they receive the answers.
+`publicRoom.ts` redacts `song` to `null` on every unresolved cell for the other players, so
+rosco rooms **cannot use broadcast** — `broadcastRoom()` in `index.ts` emits per socket.
+
+In `turnos`, a hit keeps the turn and a miss or *pasapalabra* passes it; passed letters come
+back on the next lap. Disconnected players are skipped and their board no longer blocks the end
+of the game.
 
 ## Socket.io events
 
@@ -71,6 +90,11 @@ Each turn: active player calls `game:flip` (draws card) → `game:select` (pick 
 | C → S | `game:place` | Active player confirms |
 | C → S | `game:skip` | Active player discards card |
 | C → S | `game:audio:started` | Triggers sync to spectators |
+| C → S | `rosco:award` | Host-only: `{ playerId, award }` — grants a letter in `paralelo` |
+| C → S | `rosco:skip` | Host-only: nobody got it (`paralelo`) |
+| C → S | `rosco:correct` | Host-only: `{ award }` — hit in `turnos` |
+| C → S | `rosco:wrong` | Host-only: miss in `turnos`, passes the turn |
+| C → S | `rosco:pass` | Host-only: *pasapalabra* in `turnos` |
 | S → C | `room:joined` | `{ room, yourPlayerId }` |
 | S → C | `room:updated` | Lobby state changes |
 | S → C | `game:state` | Full room state after any game event |
@@ -116,7 +140,8 @@ In dev, room state persists to `dev-rooms.json` (survives backend hot-reload).
 ## Rules
 
 - Do not install new libraries without a clear need
-- Do not touch `roomManager.ts` unless explicitly asked — it contains all game logic
+- Do not touch `roomManager.ts` or `rosco.ts` unless explicitly asked — they contain all game logic
+- Never emit a rosco room with `io.to(code)` — go through `broadcastRoom()` or you leak the answers
 - Do not modify the `Song` type or `Room` interface unless explicitly asked
 - Do not modify `useAudio.ts` or `useSocket.ts` unless explicitly asked
 - Do not modify WebSocket room logic

@@ -6,12 +6,13 @@ Puerto: **3000**. Proxy `/api` → `http://backend:4000` (configurado en `vite.c
 
 ```
 src/
-├── pages/          ← Home, Lobby, Game, Results (react-router-dom)
+├── pages/          ← Home, Lobby, Game, Rosco, Results (react-router-dom)
 ├── game/
-│   └── components/ ← AudioPlayer, YouTubePlayer, CardSlot, Timeline, …
+│   └── components/ ← AudioPlayer, YouTubePlayer, CardSlot, Timeline, RoscoBoard, RoscoControls, …
 ├── hooks/
 │   ├── useAudio.ts         ← Deezer / Spotify (Howler.js, preview 30s)
 │   ├── useYouTubePlayer.ts ← YouTube IFrame API (fullscreen oculto)
+│   ├── useGameAudio.ts     ← Une provider + sync; recibe { card, canPlay } del llamador
 │   └── useSocket.ts        ← Eventos Socket.io con el backend
 ├── providers/
 │   └── SocketProvider.tsx  ← Contexto de la conexión Socket.io

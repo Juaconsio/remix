@@ -12,8 +12,11 @@ src/
 │   ├── preview.ts      ← GET /api/preview/deezer/:id y /spotify/:id
 │   └── youtubeSearch.ts← GET /api/youtube/search?q=
 └── rooms/
-    ├── roomManager.ts  ← CRUD de salas, lógica de juego
-    └── types.ts        ← Tipos Room, RoomPlayer, RoomConfig
+    ├── roomManager.ts  ← CRUD de salas, lógica del modo clásico
+    ├── rosco.ts        ← Reglas del rosco (funciones puras sobre Room, con tests)
+    ├── roscoPacks.ts   ← Packs de rosco derivados del catálogo
+    ├── publicRoom.ts   ← Redacción de la respuesta por espectador
+    └── types.ts        ← Tipos Room, RoomPlayer, RoomConfig, RoscoCell
 ```
 
 ## Socket.io — eventos principales
@@ -30,6 +33,8 @@ src/
 | Cliente → Servidor | `game:place` | Confirmar posición |
 | Servidor → Cliente | `room:joined` | Confirmación de unión |
 | Servidor → Cliente | `room:updated` | Estado actualizado de la sala |
+| Cliente → Servidor | `rosco:award` / `rosco:skip` | Adjudicar letra en `paralelo` (solo host) |
+| Cliente → Servidor | `rosco:correct` / `rosco:wrong` / `rosco:pass` | Juzgar en `turnos` (solo host) |
 
 ## REST endpoints
 
@@ -52,6 +57,7 @@ SPOTIFY_CLIENT_SECRET=
 
 ## Reglas
 
-- No modificar `roomManager.ts` salvo instrucción explícita — contiene toda la lógica de juego
+- No modificar `roomManager.ts` ni `rosco.ts` salvo instrucción explícita — contienen la lógica de juego
+- Las salas de rosco no se emiten con `io.to(code)`: usar `broadcastRoom()` o se filtran las respuestas
 - El token de Spotify se cachea en memoria (`spotifyTokenCache`) — no duplicar esa lógica
 - En dev, el estado de las salas se persiste en `dev-rooms.json` (útil para hot-reload)
