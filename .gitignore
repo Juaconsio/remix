@@ -3,7 +3,6 @@
 # dependencies
 /node_modules
 **/node_modules
-**/dist
 /.pnp
 .pnp.*
 .yarn/*
@@ -15,11 +14,8 @@
 # testing
 /coverage
 
-# next.js
-/.next/
-/out/
-
-# production
+# build output
+**/dist
 /build
 
 # misc
@@ -36,12 +32,11 @@ yarn-error.log*
 # env files (can opt-in for committing if needed)
 .env*
 
-# vercel
-.vercel
-
 # typescript
 *.tsbuildinfo
-next-env.d.ts
 
 # dev persistence state
 backend/dev-rooms.json
+
+# personal Claude Code settings (shared config lives in .claude/settings.json)
+.claude/settings.local.json
