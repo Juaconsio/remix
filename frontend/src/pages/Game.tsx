@@ -11,6 +11,7 @@ import { getSongSignal, DEFAULT_SIGNAL } from '../utils/songColor';
 export default function Game() {
   const navigate = useNavigate();
   const { room, myPlayerId, flipCard, selectPosition, placeCard, skipCard } = useSocket();
+  const isActivePlayer = room?.players[room.currentPlayerIndex]?.id === myPlayerId;
   const {
     provider,
     activePlayer,
@@ -19,7 +20,7 @@ export default function Game() {
     missingYouTubeVideo,
     thumbnailUrl,
     ytContainerRef,
-  } = useGameAudio(room, myPlayerId);
+  } = useGameAudio(room, { card: room?.currentCard ?? null, canPlay: isActivePlayer });
 
   useEffect(() => {
     if (!room) { navigate('/'); return; }
@@ -29,9 +30,8 @@ export default function Game() {
 
   if (!room) return null;
 
-  const currentPlayer  = room.players[room.currentPlayerIndex] ?? null;
-  const myPlayer       = room.players.find((p) => p.id === myPlayerId) ?? null;
-  const isActivePlayer = currentPlayer?.id === myPlayerId;
+  const currentPlayer = room.players[room.currentPlayerIndex] ?? null;
+  const myPlayer      = room.players.find((p) => p.id === myPlayerId) ?? null;
 
   if (!currentPlayer) return null;
 

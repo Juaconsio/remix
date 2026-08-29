@@ -1,5 +1,5 @@
 import { createContext, useContext } from 'react';
-import type { Room, RoomConfig } from '../types/socket';
+import type { Award, Room, RoomConfig } from '../types/socket';
 import type { ServerToClientEvents } from '../types/socket';
 
 export interface SocketContextValue {
@@ -16,6 +16,11 @@ export interface SocketContextValue {
   selectPosition: (position: number) => void;
   placeCard: () => void;
   skipCard: () => void;
+  roscoAward: (playerId: string, award: Award) => void;
+  roscoSkip: () => void;
+  roscoCorrect: (award: Award) => void;
+  roscoWrong: () => void;
+  roscoPass: () => void;
   notifyAudioStarted: () => void;
   onAudioPlay: (handler: ServerToClientEvents['game:audio:play']) => () => void;
 }

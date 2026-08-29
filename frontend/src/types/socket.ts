@@ -8,10 +8,41 @@ export interface RoomPlayer {
   connected: boolean;
 }
 
+export type GameMode = 'classic' | 'rosco';
+
+export type RoscoSubMode = 'paralelo' | 'turnos';
+
+export type LetterStatus = 'pending' | 'active' | 'correct' | 'wrong' | 'passed';
+
+export interface RoscoCell {
+  letter: string;
+  // null cuando el servidor redacta la respuesta para quien aún no debe verla.
+  song: Song | null;
+  acceptTitle: boolean;
+  acceptArtist: boolean;
+  status: LetterStatus;
+  guessedTitle: boolean;
+  guessedArtist: boolean;
+  wonBy: string | null;
+}
+
+export interface RoscoState {
+  subMode: RoscoSubMode;
+  boards: RoscoCell[][];
+}
+
+export interface Award {
+  title: boolean;
+  artist: boolean;
+}
+
 export interface RoomConfig {
   packId: string;
   provider: MusicProvider;
   syncAudio: boolean;
+  mode: GameMode;
+  roscoSubMode: RoscoSubMode;
+  roscoPackId: string;
 }
 
 export type RoomStatus = 'lobby' | 'setup' | 'round_active' | 'validating' | 'finished';
@@ -27,6 +58,7 @@ export interface Room {
   currentCard: Song | null;
   selectedPosition: number | null;
   validationResult: boolean | null;
+  rosco: RoscoState | null;
 }
 
 // Eventos cliente → servidor
@@ -41,6 +73,11 @@ export interface ClientToServerEvents {
   'game:place': () => void;
   'game:audio:started': () => void;
   'game:skip': () => void;
+  'rosco:award': (payload: { playerId: string; award: Award }) => void;
+  'rosco:skip': () => void;
+  'rosco:correct': (payload: { award: Award }) => void;
+  'rosco:wrong': () => void;
+  'rosco:pass': () => void;
 }
 
 // Eventos servidor → cliente

@@ -5,12 +5,23 @@ import { useSocket } from '../hooks/useSocket';
 import { useProviderStore } from '../store/providerStore';
 import { DEFAULT_SIGNAL } from '../utils/songColor';
 import type { MusicProvider } from '../types/game';
+import type { GameMode, RoscoSubMode } from '../types/socket';
 import { SettingsTrigger } from '../game/components/SettingsTrigger';
 import { cn } from '../utils/cn';
 
 const PACKS = [
   { id: 'base',        name: 'Pack Base',    description: '20 hits de todos los tiempos (1967–2023)' },
   { id: 'indie-vibes', name: 'Indie Vibes',  description: '15 canciones indie/alternativas' },
+];
+
+const MODES: { id: GameMode; name: string; description: string }[] = [
+  { id: 'classic',  name: 'Clásico',       description: 'Ordena las canciones en tu línea de tiempo' },
+  { id: 'rosco',    name: 'Rosco musical', description: 'Una canción por letra · el host adjudica' },
+];
+
+const SUB_MODES: { id: RoscoSubMode; name: string; description: string }[] = [
+  { id: 'paralelo', name: 'Paralelo',   description: 'Rosco compartido · el host marca quién la acertó' },
+  { id: 'turnos',   name: 'Por turnos', description: 'Un rosco por jugador · con pasapalabra' },
 ];
 
 const AVATAR_SIGNALS = [
@@ -40,7 +51,9 @@ export default function Lobby() {
 
   useEffect(() => {
     if (!room) { navigate('/'); return; }
-    if (room.status === 'round_active' || room.status === 'setup') navigate(`/game/${room.code}`);
+    if (room.status === 'round_active' || room.status === 'setup') {
+      navigate(room.config.mode === 'rosco' ? `/rosco/${room.code}` : `/game/${room.code}`);
+    }
     if (room.status === 'finished') navigate(`/results/${room.code}`);
   }, [room, navigate]);
 
@@ -135,8 +148,76 @@ export default function Lobby() {
         </ul>
       </section>
 
-      {/* Song pack — host only */}
       <section className="mb-6">
+        <p className="font-mono-cut text-muted mb-[10px]" style={{ fontSize: 10 }}>
+          modo de juego
+        </p>
+        <div className="flex flex-col gap-2">
+          {MODES.map((mode) => {
+            const isSelected = config.mode === mode.id;
+            return (
+              <button
+                key={mode.id}
+                onClick={() => isHost && updateConfig({ mode: mode.id })}
+                disabled={!isHost}
+                className={cn(
+                  'w-full text-left px-4 py-3 rounded-[14px] transition-[border-color] duration-150',
+                  isSelected ? 'bg-tint' : 'bg-transparent',
+                )}
+                style={{
+                  border: isSelected ? '2.5px solid var(--cut-ink)' : '1.5px solid var(--cut-border)',
+                  cursor: isHost ? 'pointer' : 'default',
+                }}
+              >
+                <p className="font-display text-ink" style={{ fontStyle: 'italic', fontWeight: 700, fontSize: 15, letterSpacing: -0.3 }}>
+                  {mode.name}
+                </p>
+                <p className="font-mono-cut text-muted mt-[3px]" style={{ fontSize: 9, opacity: 0.5 }}>
+                  {mode.description}
+                </p>
+              </button>
+            );
+          })}
+        </div>
+      </section>
+
+      {config.mode === 'rosco' && (
+        <section className="mb-6">
+          <p className="font-mono-cut text-muted mb-[10px]" style={{ fontSize: 10 }}>
+            reparto del rosco
+          </p>
+          <div className="flex flex-col gap-2">
+            {SUB_MODES.map((sub) => {
+              const isSelected = config.roscoSubMode === sub.id;
+              return (
+                <button
+                  key={sub.id}
+                  onClick={() => isHost && updateConfig({ roscoSubMode: sub.id })}
+                  disabled={!isHost}
+                  className={cn(
+                    'w-full text-left px-4 py-3 rounded-[14px] transition-[border-color] duration-150',
+                    isSelected ? 'bg-tint' : 'bg-transparent',
+                  )}
+                  style={{
+                    border: isSelected ? '2.5px solid var(--cut-ink)' : '1.5px solid var(--cut-border)',
+                    cursor: isHost ? 'pointer' : 'default',
+                  }}
+                >
+                  <p className="font-display text-ink" style={{ fontStyle: 'italic', fontWeight: 700, fontSize: 15, letterSpacing: -0.3 }}>
+                    {sub.name}
+                  </p>
+                  <p className="font-mono-cut text-muted mt-[3px]" style={{ fontSize: 9, opacity: 0.5 }}>
+                    {sub.description}
+                  </p>
+                </button>
+              );
+            })}
+          </div>
+        </section>
+      )}
+
+      {/* Song pack — host only */}
+      <section className={cn('mb-6', config.mode === 'rosco' && 'hidden')}>
         <p className="font-mono-cut text-muted mb-[10px]" style={{ fontSize: 10 }}>
           pack de canciones
         </p>

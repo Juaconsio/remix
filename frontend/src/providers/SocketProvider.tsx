@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, useCallback, type ReactNode } from 'react';
 import { io, Socket } from 'socket.io-client';
 import { SocketContext, type SocketContextValue } from '../hooks/useSocket';
-import type { ServerToClientEvents, ClientToServerEvents, Room, RoomConfig } from '../types/socket';
+import type { ServerToClientEvents, ClientToServerEvents, Award, Room, RoomConfig } from '../types/socket';
 
 type AppSocket = Socket<ServerToClientEvents, ClientToServerEvents>;
 
@@ -105,6 +105,26 @@ export function SocketProvider({ children }: { children: ReactNode }) {
     socketRef.current?.emit('game:skip');
   }, []);
 
+  const roscoAward = useCallback((playerId: string, award: Award) => {
+    socketRef.current?.emit('rosco:award', { playerId, award });
+  }, []);
+
+  const roscoSkip = useCallback(() => {
+    socketRef.current?.emit('rosco:skip');
+  }, []);
+
+  const roscoCorrect = useCallback((award: Award) => {
+    socketRef.current?.emit('rosco:correct', { award });
+  }, []);
+
+  const roscoWrong = useCallback(() => {
+    socketRef.current?.emit('rosco:wrong');
+  }, []);
+
+  const roscoPass = useCallback(() => {
+    socketRef.current?.emit('rosco:pass');
+  }, []);
+
   const notifyAudioStarted = useCallback(() => {
     socketRef.current?.emit('game:audio:started');
   }, []);
@@ -130,6 +150,11 @@ export function SocketProvider({ children }: { children: ReactNode }) {
     notifyAudioStarted,
     onAudioPlay,
     skipCard,
+    roscoAward,
+    roscoSkip,
+    roscoCorrect,
+    roscoWrong,
+    roscoPass,
   };
 
   return <SocketContext.Provider value={value}>{children}</SocketContext.Provider>;

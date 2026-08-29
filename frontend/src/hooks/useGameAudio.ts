@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { Room } from '../types/socket';
-import type { ActivePlayerState, MusicProvider } from '../types/game';
+import type { ActivePlayerState, MusicProvider, Song } from '../types/game';
 import { useSocket } from './useSocket';
 import { useAudio } from './useAudio';
 import { useYouTubePlayer } from './useYouTubePlayer';
@@ -16,7 +16,15 @@ export interface UseGameAudioReturn {
   ytContainerRef: React.RefObject<HTMLDivElement | null>;
 }
 
-export function useGameAudio(room: Room | null, myPlayerId: string | null): UseGameAudioReturn {
+export interface UseGameAudioOptions {
+  card: Song | null;
+  canPlay: boolean;
+}
+
+export function useGameAudio(
+  room: Room | null,
+  { card, canPlay }: UseGameAudioOptions,
+): UseGameAudioReturn {
   const { skipCard, notifyAudioStarted, onAudioPlay } = useSocket();
   const { isPlaying, isLoading, progress, error, play, stop } = useAudio();
   const ytPlayer = useYouTubePlayer();
@@ -25,11 +33,8 @@ export function useGameAudio(room: Room | null, myPlayerId: string | null): UseG
   const [providerError, setProviderError] = useState<string | null>(null);
   const ytMapRef = useRef<Record<string, string>>({});
 
-  const currentPlayer = room ? room.players[room.currentPlayerIndex] : null;
-  const isActivePlayer = currentPlayer?.id === myPlayerId;
-
   // Limpiar error al cambiar carta
-  useEffect(() => { setProviderError(null); }, [room?.currentCard]);
+  useEffect(() => { setProviderError(null); }, [card]);
 
   // Stop de audio al pasar a validating
   useEffect(() => {
@@ -58,21 +63,22 @@ export function useGameAudio(room: Room | null, myPlayerId: string | null): UseG
   useEffect(() => {
     if (!room?.config.syncAudio) return;
     return onAudioPlay(({ trackId, provider: p, hookStart, hookDuration }) => {
-      if (isActivePlayer) return;
+      if (canPlay) return;
       if (p === 'youtube') {
         ytPlayer.play(trackId, hookStart, hookDuration);
       } else {
         play(trackId, p, hookStart, hookDuration);
       }
     });
-  }, [room?.config.syncAudio, onAudioPlay, play, ytPlayer, isActivePlayer]);
+  }, [room?.config.syncAudio, onAudioPlay, play, ytPlayer, canPlay]);
 
   // Auto-skip cuando el video no permite embedding en mobile (150/101)
   useEffect(() => {
     if (
       provider === 'youtube' &&
       (ytPlayer.errorCode === 150 || ytPlayer.errorCode === 101) &&
-      isActivePlayer &&
+      canPlay &&
+      room?.config.mode !== 'rosco' &&
       room?.status === 'round_active'
     ) {
       console.warn('[YouTube] Auto-skip por error de embedding:', ytPlayer.errorCode);
@@ -82,9 +88,8 @@ export function useGameAudio(room: Room | null, myPlayerId: string | null): UseG
   }, [ytPlayer.errorCode]);
 
   const handlePlay = useCallback(() => {
-    if (!room?.currentCard || !isActivePlayer) return;
+    if (!card || !canPlay) return;
     setProviderError(null);
-    const card = room.currentCard;
 
     if (provider === 'youtube') {
       const videoId = ytMapRef.current[card.id] ?? card.providerIds?.youtube;
@@ -100,11 +105,11 @@ export function useGameAudio(room: Room | null, myPlayerId: string | null): UseG
       play(trackId, provider, card.hookStart, card.hookDuration);
     }
 
-    if (room.config.syncAudio) notifyAudioStarted();
-  }, [room, isActivePlayer, provider, ytPlayer, play, notifyAudioStarted]);
+    if (room?.config.syncAudio) notifyAudioStarted();
+  }, [room, card, canPlay, provider, ytPlayer, play, notifyAudioStarted]);
 
-  const currentCardVideoId = room?.currentCard
-    ? (ytMapRef.current[room.currentCard.id] ?? room.currentCard.providerIds?.youtube)
+  const currentCardVideoId = card
+    ? (ytMapRef.current[card.id] ?? card.providerIds?.youtube)
     : undefined;
 
   const displayError = providerError ?? (provider === 'youtube' ? ytPlayer.error : error);
