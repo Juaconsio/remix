@@ -59,7 +59,13 @@ function nextPlayable(room: Room, from: number): number {
 function settle(room: Room): void {
   if (!room.rosco) return;
   recalcScores(room.players, room.rosco.boards, room.rosco.subMode);
-  if (room.rosco.boards.every(boardDone)) room.status = 'finished';
+
+  // Contar el tablero de un desconectado deja la partida sin final posible.
+  const pending = room.rosco.subMode === 'paralelo'
+    ? !boardDone(room.rosco.boards[0])
+    : room.rosco.boards.some((board, i) => room.players[i]?.connected && !boardDone(board));
+
+  if (!pending) room.status = 'finished';
 }
 
 function judge(room: Room, resolve: (cell: RoscoCell) => boolean): boolean {

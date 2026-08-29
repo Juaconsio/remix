@@ -163,3 +163,13 @@ describe('modo por turnos', () => {
     expect(r.currentPlayerIndex).toBe(2);
   });
 });
+
+describe('fin de partida', () => {
+  it('no espera al tablero de un jugador desconectado', () => {
+    const r = room('turnos', entries('Alfa'), ['ana', 'beto']);
+    r.players[1].connected = false;
+
+    answerWrong(r);
+    expect(r.status).toBe('finished');
+  });
+});
