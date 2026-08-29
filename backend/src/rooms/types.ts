@@ -9,10 +9,36 @@ export interface RoomPlayer {
   connected: boolean;
 }
 
+export type GameMode = 'classic' | 'rosco';
+
+export type RoscoSubMode = 'paralelo' | 'turnos';
+
+export type LetterStatus = 'pending' | 'active' | 'correct' | 'wrong' | 'passed';
+
+export interface RoscoCell {
+  letter: string;
+  // null cuando publicRoom.ts redacta la respuesta para quien aún no debe verla.
+  song: Song | null;
+  acceptTitle: boolean;
+  acceptArtist: boolean;
+  status: LetterStatus;
+  guessedTitle: boolean;
+  guessedArtist: boolean;
+  wonBy: string | null;
+}
+
+export interface RoscoState {
+  subMode: RoscoSubMode;
+  boards: RoscoCell[][];
+}
+
 export interface RoomConfig {
   packId: string;
   provider: MusicProvider;
   syncAudio: boolean;
+  mode: GameMode;
+  roscoSubMode: RoscoSubMode;
+  roscoPackId: string;
 }
 
 export type RoomStatus = 'lobby' | 'setup' | 'round_active' | 'validating' | 'finished';
@@ -28,4 +54,5 @@ export interface Room {
   currentCard: Song | null;
   selectedPosition: number | null;
   validationResult: boolean | null;
+  rosco: RoscoState | null;
 }

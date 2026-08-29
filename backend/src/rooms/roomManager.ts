@@ -1,5 +1,8 @@
 import type { Room, RoomPlayer, RoomConfig } from './types.js';
 import { allSongs as songs } from '../songs.js';
+import { getRoscoPack, buildCells, SAMPLE_PACK_ID } from './roscoPacks.js';
+import * as rosco from './rosco.js';
+import type { Award } from './rosco.js';
 import { readFileSync, writeFileSync } from 'fs';
 import { join } from 'path';
 
@@ -45,13 +48,21 @@ export function createRoom(hostId: string, hostName: string): Room {
     code,
     hostId,
     players: [{ id: hostId, name: hostName, timeline: [], score: 0, connected: true }],
-    config: { packId: 'base', provider: 'deezer', syncAudio: false },
+    config: {
+      packId: 'base',
+      provider: 'deezer',
+      syncAudio: false,
+      mode: 'classic',
+      roscoSubMode: 'paralelo',
+      roscoPackId: SAMPLE_PACK_ID,
+    },
     status: 'lobby',
     deck: [],
     currentPlayerIndex: 0,
     currentCard: null,
     selectedPosition: null,
     validationResult: null,
+    rosco: null,
   };
   rooms.set(code, room);
   saveRooms();
@@ -133,7 +144,8 @@ export function removePlayer(playerId: string): Room | undefined {
     // así que no tocamos el turno para no avanzar dos veces.
     const activeId = room.players[room.currentPlayerIndex]?.id;
     if (activeId === playerId && (room.status === 'setup' || room.status === 'round_active')) {
-      advanceTurn(room);
+      if (room.rosco) rosco.releaseTurn(room);
+      else advanceTurn(room);
     }
 
     saveRooms();
@@ -190,10 +202,31 @@ function shuffle<T>(arr: T[]): T[] {
 export function startGame(code: string): Room {
   const room = rooms.get(code);
   if (!room) throw new Error('Sala no encontrada');
-  const packSongs = songs.filter((s) => s.packId === room.config.packId);
-  room.deck = shuffle(packSongs);
   room.players.forEach((p) => { p.timeline = []; p.score = 0; });
   room.currentPlayerIndex = 0;
+  room.currentCard = null;
+  room.selectedPosition = null;
+  room.validationResult = null;
+
+  if (room.config.mode === 'rosco') {
+    const pack = getRoscoPack(room.config.roscoPackId);
+    if (!pack || pack.entries.length === 0) throw new Error('Pack de rosco no encontrado');
+    const subMode = room.config.roscoSubMode;
+    room.rosco = {
+      subMode,
+      boards: subMode === 'paralelo'
+        ? [buildCells(pack.entries)]
+        : room.players.map(() => buildCells(pack.entries)),
+    };
+    room.deck = [];
+    room.status = 'round_active';
+    saveRooms();
+    return room;
+  }
+
+  const packSongs = songs.filter((s) => s.packId === room.config.packId);
+  room.deck = shuffle(packSongs);
+  room.rosco = null;
   room.status = 'setup';
   saveRooms();
   return room;
@@ -273,4 +306,37 @@ export function nextTurn(code: string): Room {
   advanceTurn(room);
   saveRooms();
   return room;
+}
+
+function applyRosco(code: string, action: (room: Room) => boolean): Room {
+  const room = rooms.get(code);
+  if (!room || !room.rosco) throw new Error('Sala sin partida de rosco');
+  if (!action(room)) throw new Error('Jugada de rosco inválida');
+  saveRooms();
+  return room;
+}
+
+export function roscoAward(code: string, playerId: string, award: Award): Room {
+  return applyRosco(code, (room) => rosco.awardLetter(room, playerId, award));
+}
+
+export function roscoSkip(code: string): Room {
+  return applyRosco(code, rosco.skipLetter);
+}
+
+export function roscoCorrect(code: string, award: Award): Room {
+  return applyRosco(code, (room) => rosco.answerCorrect(room, award));
+}
+
+export function roscoWrong(code: string): Room {
+  return applyRosco(code, rosco.answerWrong);
+}
+
+export function roscoPass(code: string): Room {
+  return applyRosco(code, rosco.pasapalabra);
+}
+
+export function roscoActiveCell(code: string) {
+  const room = rooms.get(code);
+  return room ? rosco.activeCell(room) : null;
 }
