@@ -40,15 +40,21 @@ pnpm dev:build      # first run or after Dockerfile changes
 pnpm down           # stop
 
 # Without Docker
-cd backend && pnpm dev     # terminal 1 → port 4000 (tsx watch)
-cd frontend && pnpm dev    # terminal 2 → port 3000 (Vite HMR)
+cd backend && pnpm dev     # terminal 1 → port 4000 (tsx watch, loads backend/.env)
+cd frontend && pnpm dev    # terminal 2 → port 3000 (Vite HMR, proxies to localhost:4000)
 
 # Type check
 cd frontend && pnpm build  # tsc -b + vite build
 cd backend && pnpm build   # tsc
 ```
 
-Copy `.env.example` → `backend/.env` before first run.
+Copy `.env.example` → `backend/.env` before first run. Docker injects it via `env_file`;
+outside Docker the `dev` script loads it with `--env-file-if-exists`. Without a
+`YOUTUBE_API_KEY` the `/api/youtube/*` routes answer 500 and the YouTube provider has no
+video ids to play.
+
+The Vite dev proxy targets `BACKEND_ORIGIN` (default `http://localhost:4000`);
+`docker-compose.dev.yml` overrides it with the `backend` service name.
 
 ## Game modes
 
