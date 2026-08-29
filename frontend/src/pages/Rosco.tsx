@@ -28,7 +28,7 @@ export default function Rosco() {
   const activeCell = board && activeIndex >= 0 ? board[activeIndex] : null;
   const letterKey = `${room?.currentPlayerIndex}-${activeCell?.letter}`;
 
-  const { provider, activePlayer, displayError } = useGameAudio(room, {
+  const { provider, activePlayer, displayError, ytContainerRef } = useGameAudio(room, {
     card: activeCell?.song ?? null,
     canPlay: isHost,
   });
@@ -126,6 +126,17 @@ export default function Rosco() {
             : 'escucha y responde en voz alta.'}
         </p>
       )}
+
+      {/* YouTube iframe — always off-screen, never display:none */}
+      <div
+        ref={ytContainerRef}
+        className="fixed pointer-events-none opacity-0"
+        style={{
+          width: '200px',
+          height: '200px',
+          transform: 'translate(-9999px, -9999px)',
+        }}
+      />
     </main>
   );
 }
