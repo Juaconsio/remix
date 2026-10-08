@@ -1,4 +1,4 @@
-import type { Room, RoomPlayer, RoomConfig } from './types.js';
+import type { Room, RoomConfig } from './types.js';
 import { allSongs as songs } from '../songs.js';
 import { getRoscoPack, buildCells, SAMPLE_PACK_ID } from './roscoPacks.js';
 import * as rosco from './rosco.js';

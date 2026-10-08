@@ -56,7 +56,6 @@ export function useGameAudio(
         if (data.map) ytMapRef.current = data.map;
       })
       .catch((err) => console.warn('[YT playlist-map] error:', err));
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [provider, room?.config.packId]);
 
   // Audio sincronizado para jugadores no activos

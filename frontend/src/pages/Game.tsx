@@ -49,7 +49,7 @@ export default function Game() {
 
   const { primary, onPrimary } = signal;
 
-  const totalCards = (room as any).deckSize ?? 10;
+  const totalCards = 10;
   const roundNum   = room.players.reduce((max, p) => Math.max(max, p.timeline.length), 0) + 1;
 
   const playerProps = {

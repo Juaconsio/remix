@@ -183,7 +183,7 @@ export function useYouTubePlayer(): UseYouTubePlayerReturn {
     });
 
     setState({ isPlaying: false, isLoading: true, progress: 0, error: null, errorCode: null });
-  }, [clearTimers, startTimers]);
+  }, [clearTimers, startTimers, setYtPlaying]);
 
   const play = useCallback((videoId: string, hookStart: number, hookDuration: number) => {
     // Evitar llamadas múltiples mientras ya está cargando o reproduciendo

@@ -69,28 +69,6 @@ function Pill({
   );
 }
 
-/** Pill de toggle para fondo neutro (bg-bg) */
-function NeutralPill({
-  label,
-  active,
-  onClick,
-}: { label: string; active: boolean; onClick: () => void }) {
-  return (
-    <button
-      onClick={onClick}
-      className={cn(
-        'font-mono-cut px-3 py-1 rounded-full border transition-colors duration-100',
-        active
-          ? 'bg-ink text-bg border-ink'
-          : 'bg-transparent text-muted border-border',
-      )}
-      style={{ fontSize: 9 }}
-    >
-      {label}
-    </button>
-  );
-}
-
 type Section = 'all' | 'cardslot' | 'timeline' | 'validation' | 'header' | 'ui';
 
 const SECTIONS: { id: Section; label: string }[] = [
