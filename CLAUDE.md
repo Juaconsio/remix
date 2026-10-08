@@ -1,157 +1,99 @@
 # CLAUDE.md
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+Remix is a multiplayer music party game: players join a room from their phones and play
+`classic` (place songs on a timeline by year) or `rosco` (Pasapalabra-style letters).
 
 ## Architecture
 
-Monorepo **Vite + Express**, NOT Next.js.
+pnpm workspace, **Vite + Express**, NOT Next.js.
 
-```
-remix/
-├── frontend/          ← React + Vite + TypeScript (port 3000)
-│   └── src/
-│       ├── pages/     ← Home, Lobby, Game, Rosco, Results (react-router-dom)
-│       ├── game/components/  ← AudioPlayer, YouTubePlayer, CardSlot, Timeline, RoscoBoard, RoscoControls, …
-│       ├── hooks/     ← useAudio, useYouTubePlayer, useSocket
-│       ├── providers/ ← SocketProvider (Socket.io context)
-│       ├── store/     ← providerStore (Zustand, persists active music provider)
-│       └── types/     ← game.ts (Song, MusicProvider), socket.ts, youtube.d.ts
-├── backend/           ← Express + Socket.io + TypeScript (port 4000)
-│   └── src/
-│       ├── index.ts         ← Entry point: Express + Socket.io server + all event handlers
-│       ├── songs.ts         ← Song catalogue (in-memory)
-│       ├── types.ts         ← Song, MusicProvider (mirrored in frontend/src/types/game.ts)
-│       ├── routes/          ← preview.ts, youtubeSearch.ts, youtubePlaylistMap.ts
-│       └── rooms/           ← roomManager.ts (all game logic), rosco.ts (rosco rules),
-│                               roscoPacks.ts, publicRoom.ts (answer redaction), types.ts
-└── docker-compose.dev.yml
-```
+- `frontend/` — React + Vite + TypeScript, Socket.io client, Zustand stores. Dev on :3000.
+- `backend/` — Express + Socket.io + TypeScript. Dev on :4000. Socket handlers live in
+  `src/index.ts`; game logic in `src/rooms/`.
+- Production is a single service: the backend serves the built frontend and Socket.io on
+  the same origin. Deploy (Dockerfile, Railway, env vars) is documented in `README.md`.
 
-**Type mirroring:** `backend/src/types.ts` (Song) and `backend/src/rooms/types.ts` (Room, RoomPlayer, RoomConfig) are mirrored in `frontend/src/types/`. Keep them in sync manually — there is no shared package.
+Sources of truth — read them instead of keeping a copy here:
 
-Frontend proxies `/api` → `http://backend:4000` (configured in `vite.config.ts`).
+- Socket events: `ClientToServerEvents` / `ServerToClientEvents` in `frontend/src/types/socket.ts`.
+- REST routes: `backend/src/index.ts`.
+- Backend env vars: `backend/.env.example` (copy it to `backend/.env` before the first run).
 
 ## Commands
 
 ```bash
-# Recommended: Docker (starts both services)
-pnpm dev            # docker compose up
-pnpm dev:build      # first run or after Dockerfile changes
-pnpm down           # stop
-
-# Without Docker
-cd backend && pnpm dev     # terminal 1 → port 4000 (tsx watch, loads backend/.env)
-cd frontend && pnpm dev    # terminal 2 → port 3000 (Vite HMR, proxies to localhost:4000)
-
-# Type check
-cd frontend && pnpm build  # tsc -b + vite build
-cd backend && pnpm build   # tsc
+pnpm check        # typecheck + lint + test; CI runs these plus `pnpm build` on every push
+pnpm build
+pnpm dev          # Docker: backend, frontend and a cloudflared tunnel
+pnpm dev:build    # first run or after Dockerfile changes
+pnpm down
 ```
 
-Copy `.env.example` → `backend/.env` before first run. Docker injects it via `env_file`;
-outside Docker the `dev` script loads it with `--env-file-if-exists`. Without a
-`YOUTUBE_API_KEY` the `/api/youtube/*` routes answer 500 and the YouTube provider has no
-video ids to play.
+Without Docker: `pnpm -C backend dev` (loads `backend/.env`) and `pnpm -C frontend dev`.
 
-The Vite dev proxy targets `BACKEND_ORIGIN` (default `http://localhost:4000`);
-`docker-compose.dev.yml` overrides it with the `backend` service name.
+- The `cloudflared` service publishes the frontend on a temporary `trycloudflare.com` URL
+  printed in its logs — the way to try the game on phones without deploying.
+- Vite has no `strictPort`: if :3000 is taken it silently moves to the next free port.
+- Vite proxies `/api` and `/socket.io` to `BACKEND_ORIGIN` (default `http://localhost:4000`;
+  Docker sets `http://backend:4000`). The Socket.io client connects to `VITE_BACKEND_URL`,
+  or to the page origin when it is unset.
+- Without `YOUTUBE_API_KEY` the `/api/youtube/*` routes answer 500.
+- Tests are Vitest, `*.test.ts` next to the code. Only `rosco.test.ts` exists so far.
+- In dev, rooms persist to `backend/dev-rooms.json` (survives hot reload). With
+  `NODE_ENV=production` they live only in memory.
 
 ## Game modes
 
-`config.mode` picks the game: `classic` (timeline) or `rosco` (Pasapalabra-style letters).
-The lobby is shared; `game:start` branches and the client routes to `/game/:code` or `/rosco/:code`.
+`config.mode` picks the game. The lobby is shared; `game:start` branches and the client
+routes to `/game/:code` or `/rosco/:code`.
 
-## Game flow — classic
+### Classic
 
-Turn order: `lobby` → `setup` → `round_active` → `validating` → (next turn or) `finished`.
+Status: `lobby` → `setup` → `round_active` → `validating` → (next turn or) `finished`.
 
-Each turn: active player calls `game:flip` (draws card) → `game:select` (pick timeline position) → `game:place` (confirm). Server auto-advances to next turn after 2.5s. Players can also call `game:skip` to discard the current card.
+Each turn the active player emits `game:flip` (draws a card) → `game:select` (picks a
+timeline position) → `game:place` (confirms); the server moves to the next turn 2.5 s later.
+`game:skip` discards the current card. A correct placement scores 1; the game ends when a
+player reaches 7 or the deck runs out.
 
-`game:audio:started` (active player) triggers `game:audio:play` to spectators when `syncAudio` is enabled in room config.
+With `syncAudio` on, `game:audio:started` from the active player makes the server emit
+`game:audio:play` to everyone else.
 
-## Game flow — rosco
+### Rosco
 
 `game:start` builds `room.rosco.boards` from `roscoPacks.ts`: one shared board in `paralelo`,
-one per player in `turnos`. The room sits in `round_active` until every board is done.
+one per player in `turnos`. The room stays in `round_active` until every board is done.
 
 The host both plays and judges: only they emit `rosco:*`, and only they receive the answers.
-`publicRoom.ts` redacts `song` to `null` on every unresolved cell for the other players, so
-rosco rooms **cannot use broadcast** — `broadcastRoom()` in `index.ts` emits per socket.
+`publicRoom.ts` sets `song` to `null` on every unresolved cell for everyone else.
 
 In `turnos`, a hit keeps the turn and a miss or *pasapalabra* passes it; passed letters come
-back on the next lap. Disconnected players are skipped and their board no longer blocks the end
-of the game.
-
-## Socket.io events
-
-| Direction | Event | Notes |
-|---|---|---|
-| C → S | `room:create` | Creates room, emits `room:joined` back |
-| C → S | `room:join` | Join by code |
-| C → S | `room:rejoin` | Reconnect (matches by name) |
-| C → S | `room:config` | Host-only: change provider/pack/syncAudio |
-| C → S | `game:start` | Host-only |
-| C → S | `game:flip` | Active player draws card |
-| C → S | `game:select` | Active player picks position |
-| C → S | `game:place` | Active player confirms |
-| C → S | `game:skip` | Active player discards card |
-| C → S | `game:audio:started` | Triggers sync to spectators |
-| C → S | `rosco:award` | Host-only: `{ playerId, award }` — grants a letter in `paralelo` |
-| C → S | `rosco:skip` | Host-only: nobody got it (`paralelo`) |
-| C → S | `rosco:correct` | Host-only: `{ award }` — hit in `turnos` |
-| C → S | `rosco:wrong` | Host-only: miss in `turnos`, passes the turn |
-| C → S | `rosco:pass` | Host-only: *pasapalabra* in `turnos` |
-| S → C | `room:joined` | `{ room, yourPlayerId }` |
-| S → C | `room:updated` | Lobby state changes |
-| S → C | `game:state` | Full room state after any game event |
-| S → C | `game:audio:play` | `{ trackId, provider, hookStart, hookDuration }` |
-| S → C | `room:error` | Error message string |
-
-## REST endpoints
-
-| Route | Description |
-|---|---|
-| `GET /health` | Health check |
-| `GET /api/preview/deezer/:id` | Proxy to Deezer API |
-| `GET /api/preview/spotify/:id` | Proxy to Spotify API (requires OAuth token) |
-| `GET /api/youtube/search?q=` | YouTube Data API v3 search |
-| `GET /api/youtube/playlist-map` | YouTube playlist → song map |
+back on the next lap. Disconnected players are skipped and their board no longer blocks the
+end of the game.
 
 ## Audio providers
 
-| Provider | Hook | Notes |
-|---|---|---|
-| `deezer` | `useAudio` | 30s preview via `/api/preview/deezer/:id` (Howler.js) |
-| `spotify` | `useAudio` | 30s preview via `/api/preview/spotify/:id` (Howler.js) |
-| `youtube` | `useYouTubePlayer` | IFrame API, hidden div in `Game.tsx` |
+`deezer` and `spotify` play 30 s previews through `useAudio` (Howler.js) and
+`/api/preview/*`; `youtube` uses the IFrame API through `useYouTubePlayer`. The provider is
+part of the room config; `useProviderStore` persists the active one in localStorage.
 
-Active provider stored in Zustand (`useProviderStore`), persisted to localStorage.
-
-YouTube is the MVP default until there are licenses. Its known limits — Data API quota,
+YouTube is the MVP provider until there are licenses. Its known limits — Data API quota,
 iOS autoplay, Terms of Service — live in [`docs/youtube.md`](docs/youtube.md); read it
 before touching the YouTube provider or opening the game to more users.
 
-**YouTube IFrame gotcha:** never use `display:none` on the player container — it breaks the IFrame API. Use `visibility:hidden` instead.
-
-## Backend env vars (`backend/.env`)
-
-```
-PORT=4000
-CLIENT_URL=http://localhost:3000
-YOUTUBE_API_KEY=
-SPOTIFY_CLIENT_ID=
-SPOTIFY_CLIENT_SECRET=
-```
-
-Spotify token is cached in memory (`spotifyTokenCache` in `routes/preview.ts`).
-
-In dev, room state persists to `dev-rooms.json` (survives backend hot-reload).
+**YouTube IFrame gotcha:** the player container must stay rendered — `display:none` breaks
+the IFrame API. `Game.tsx` and `Rosco.tsx` keep it at 200×200 with `opacity-0`, moved
+off-screen.
 
 ## Rules
 
-- Do not install new libraries without a clear need
-- Do not touch `roomManager.ts` or `rosco.ts` unless explicitly asked — they contain all game logic
-- Never emit a rosco room with `io.to(code)` — go through `broadcastRoom()` or you leak the answers
-- Do not modify the `Song` type or `Room` interface unless explicitly asked
-- Do not modify `useAudio.ts` or `useSocket.ts` unless explicitly asked
-- Do not modify WebSocket room logic
+- Do not install new libraries without a clear need.
+- Do not touch `roomManager.ts`, `rosco.ts` or the socket handlers in `backend/src/index.ts`
+  unless explicitly asked — they hold all the game logic.
+- Never emit a rosco room with `io.to(code)`: go through `broadcastRoom()`, which redacts per
+  socket, or the answers leak.
+- Types are mirrored by hand, there is no shared package: `backend/src/types.ts` ↔
+  `frontend/src/types/game.ts` (`Song`) and `backend/src/rooms/types.ts` ↔
+  `frontend/src/types/socket.ts` (`Room`, `RoomPlayer`, `RoomConfig`). Change both sides
+  together, and do not modify `Song` or `Room` unless explicitly asked.
+- Do not modify `useAudio.ts` or `useSocket.ts` unless explicitly asked.
