@@ -29,10 +29,13 @@ pnpm dev:build    # first run or after Dockerfile changes
 pnpm down
 ```
 
-Without Docker: `pnpm -C backend dev` (loads `backend/.env`) and `pnpm -C frontend dev`.
+Without Docker: `pnpm -C backend dev` (loads `backend/.env`), `pnpm -C frontend dev` and
+`pnpm tunnel`.
 
-- The `cloudflared` service publishes the frontend on a temporary `trycloudflare.com` URL
-  printed in its logs — the way to try the game on phones without deploying.
+- `pnpm tunnel` publishes :3000 (`TUNNEL_PORT` to change it) on a temporary
+  `trycloudflare.com` URL and prints its QR once it is reachable — the way to try the game
+  on phones without deploying. Needs `cloudflared` on the PATH. The Docker `cloudflared`
+  service does the same, with the URL only in its logs.
 - Vite has no `strictPort`: if :3000 is taken it silently moves to the next free port.
 - Vite proxies `/api` and `/socket.io` to `BACKEND_ORIGIN` (default `http://localhost:4000`;
   Docker sets `http://backend:4000`). The Socket.io client connects to `VITE_BACKEND_URL`,

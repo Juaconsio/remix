@@ -36,9 +36,9 @@ export default tseslint.config(
       'react-hooks/exhaustive-deps': 'warn',
     },
   },
-  // Backend: Node
+  // Node: backend and scripts
   {
-    files: ['backend/**/*.ts'],
+    files: ['backend/**/*.ts', 'scripts/**/*.mjs'],
     languageOptions: {
       globals: { ...globals.node },
     },
