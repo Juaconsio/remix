@@ -127,6 +127,10 @@ of the game.
 
 Active provider stored in Zustand (`useProviderStore`), persisted to localStorage.
 
+YouTube is the MVP default until there are licenses. Its known limits — Data API quota,
+iOS autoplay, Terms of Service — live in [`docs/youtube.md`](docs/youtube.md); read it
+before touching the YouTube provider or opening the game to more users.
+
 **YouTube IFrame gotcha:** never use `display:none` on the player container — it breaks the IFrame API. Use `visibility:hidden` instead.
 
 ## Backend env vars (`backend/.env`)
