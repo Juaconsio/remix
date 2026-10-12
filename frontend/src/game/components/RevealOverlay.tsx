@@ -1,6 +1,7 @@
 import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
 import type { Song } from '../../types/game';
 import type { SongSignal } from '../../utils/songColor';
+import { EASE_OUT } from '../../utils/motion';
 
 interface RevealOverlayProps {
   song: Song | null;
@@ -14,7 +15,6 @@ interface RevealOverlayProps {
 }
 
 const SLIDE = { type: 'spring', damping: 28, stiffness: 220 } as const;
-const EASE_OUT = [0.23, 1, 0.32, 1] as const;
 const BADGE_DELAY = 0.6;
 
 function badgeEntrance(isCorrect: boolean, prefersReduced: boolean) {

@@ -1,15 +1,16 @@
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { motion, useReducedMotion } from 'framer-motion';
+import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
 import { useSocket } from '../hooks/useSocket';
 import { SIGNAL_STRIPE } from '../utils/songColor';
+import { EASE_OUT } from '../utils/motion';
 import { SettingsTrigger } from '../game/components/SettingsTrigger';
 import type { GameMode } from '../types/socket';
 
 export default function Home() {
   const navigate = useNavigate();
   const { room, error, createRoom, joinRoom, updateConfig, startGame } = useSocket();
-  const prefersReduced = useReducedMotion();
+  const prefersReduced = useReducedMotion() ?? false;
 
   const [playerName, setPlayerName] = useState('');
   const [joinCode, setJoinCode]     = useState('');
@@ -47,7 +48,15 @@ export default function Home() {
     joinRoom(joinCode, playerName.trim());
   }
 
-  const ease = 'backOut' as const;
+  const hidden = (offsetPx: number) =>
+    prefersReduced ? { opacity: 0 } : { opacity: 0, transform: `translateY(${offsetPx}px)` };
+  const settled = prefersReduced ? { opacity: 1 } : { opacity: 1, transform: 'translateY(0px)' };
+  const panelMotion = (delay: number) => ({
+    initial: hidden(8),
+    animate: settled,
+    exit: { ...hidden(-6), transition: { duration: prefersReduced ? 0.15 : 0.12, ease: EASE_OUT } },
+    transition: { duration: prefersReduced ? 0.15 : 0.22, ease: EASE_OUT, delay },
+  });
 
   return (
     <main className="relative flex flex-col items-center justify-center px-6 bg-bg min-h-dvh">
@@ -60,9 +69,9 @@ export default function Home() {
         {/* Wordmark */}
         <motion.div
           className="flex flex-col items-center gap-4 text-center"
-          initial={{ opacity: 0, y: prefersReduced ? 0 : 32 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: prefersReduced ? 0.01 : 0.7, ease }}
+          initial={hidden(12)}
+          animate={settled}
+          transition={{ duration: prefersReduced ? 0.15 : 0.4, ease: EASE_OUT }}
         >
           <div className="flex w-48 h-2 rounded-full overflow-hidden">
             {SIGNAL_STRIPE.map((c) => (
@@ -86,12 +95,12 @@ export default function Home() {
         </motion.div>
 
         {/* Buttons / forms */}
+        <AnimatePresence mode="wait">
         {mode === 'idle' && (
           <motion.div
+            key="idle"
             className="flex flex-col gap-3 w-full"
-            initial={{ opacity: 0, y: prefersReduced ? 0 : 24 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: prefersReduced ? 0.01 : 0.6, delay: 0.08, ease }}
+            {...panelMotion(0.06)}
           >
             <button className="btn-primary" onClick={() => setMode('create')}>
               crear sala. <span>→</span>
@@ -129,11 +138,10 @@ export default function Home() {
 
         {mode === 'create' && (
           <motion.form
+            key="create"
             onSubmit={handleCreate}
             className="flex flex-col gap-3 w-full"
-            initial={{ opacity: 0, y: prefersReduced ? 0 : 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: prefersReduced ? 0.01 : 0.55, ease }}
+            {...panelMotion(0)}
           >
             <input
               autoFocus
@@ -168,11 +176,10 @@ export default function Home() {
 
         {mode === 'join' && (
           <motion.form
+            key="join"
             onSubmit={handleJoin}
             className="flex flex-col gap-3 w-full"
-            initial={{ opacity: 0, y: prefersReduced ? 0 : 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: prefersReduced ? 0.01 : 0.55, ease }}
+            {...panelMotion(0)}
           >
             <input
               autoFocus
@@ -217,6 +224,7 @@ export default function Home() {
             </button>
           </motion.form>
         )}
+        </AnimatePresence>
 
       </div>
     </main>
