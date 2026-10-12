@@ -40,3 +40,8 @@ export const SIGNAL_STRIPE = SIGNALS.map(s => s.primary);
 
 // Default signal when no song is loaded (lobby, home)
 export const DEFAULT_SIGNAL: SongSignal = SIGNALS[1]; // naranja
+
+export function avatarColors(index: number): { bg: string; fg: string } {
+  const signal = SIGNALS[index % SIGNALS.length];
+  return { bg: signal.primary, fg: signal.onPrimary };
+}
