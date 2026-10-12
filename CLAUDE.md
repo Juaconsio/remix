@@ -41,7 +41,8 @@ Without Docker: `pnpm -C backend dev` (loads `backend/.env`), `pnpm -C frontend 
   Docker sets `http://backend:4000`). The Socket.io client connects to `VITE_BACKEND_URL`,
   or to the page origin when it is unset.
 - Without `YOUTUBE_API_KEY` the `/api/youtube/*` routes answer 500.
-- Tests are Vitest, `*.test.ts` next to the code. Only `rosco.test.ts` exists so far.
+- Tests are Vitest, `*.test.ts` next to the code: `rosco.test.ts` and `roomManager.test.ts`
+  (classic mode, with `fs` mocked so it never writes `dev-rooms.json`).
 - In dev, rooms persist to `backend/dev-rooms.json` (survives hot reload). With
   `NODE_ENV=production` they live only in memory.
 
@@ -54,6 +55,7 @@ routes to `/game/:code` or `/rosco/:code`.
 
 Status: `lobby` → `setup` → `round_active` → `validating` → (next turn or) `finished`.
 
+`game:start` deals every player one revealed starting card from the deck; it does not score.
 Each turn the active player emits `game:flip` (draws a card) → `game:select` (picks a
 timeline position) → `game:place` (confirms). The reveal stays on screen until the active
 player or the host emits `game:next`: the result is when the table reacts.

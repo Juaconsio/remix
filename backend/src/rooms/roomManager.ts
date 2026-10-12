@@ -51,7 +51,7 @@ export function createRoom(hostId: string, hostName: string): Room {
     config: {
       packId: 'base',
       provider: 'youtube',
-      syncAudio: false,
+      syncAudio: true,
       mode: 'classic',
       roscoSubMode: 'paralelo',
       roscoPackId: SAMPLE_PACK_ID,
@@ -224,8 +224,12 @@ export function startGame(code: string): Room {
     return room;
   }
 
-  const packSongs = songs.filter((s) => s.packId === room.config.packId);
-  room.deck = shuffle(packSongs);
+  const deck = shuffle(songs.filter((s) => s.packId === room.config.packId));
+  room.players.forEach((p) => {
+    const startingCard = deck.shift();
+    p.timeline = startingCard ? [startingCard] : [];
+  });
+  room.deck = deck;
   room.rosco = null;
   room.status = 'setup';
   saveRooms();
