@@ -35,10 +35,10 @@ function playCorrectTurn(code: string): Room {
 }
 
 describe('createRoom', () => {
-  it('arranca en lobby con el pack base y YouTube', () => {
+  it('arranca en lobby con el pack base, YouTube y el audio en todos los dispositivos', () => {
     const room = rm.createRoom('solo-host', 'ana');
     expect(room.status).toBe('lobby');
-    expect(room.config).toMatchObject({ packId: 'base', provider: 'youtube', mode: 'classic' });
+    expect(room.config).toMatchObject({ packId: 'base', provider: 'youtube', mode: 'classic', syncAudio: true });
     expect(room.players).toEqual([{ id: 'solo-host', name: 'ana', timeline: [], score: 0, connected: true }]);
   });
 });

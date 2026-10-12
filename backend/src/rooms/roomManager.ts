@@ -51,7 +51,7 @@ export function createRoom(hostId: string, hostName: string): Room {
     config: {
       packId: 'base',
       provider: 'youtube',
-      syncAudio: false,
+      syncAudio: true,
       mode: 'classic',
       roscoSubMode: 'paralelo',
       roscoPackId: SAMPLE_PACK_ID,
