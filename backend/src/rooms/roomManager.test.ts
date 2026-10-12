@@ -44,18 +44,32 @@ describe('createRoom', () => {
 });
 
 describe('startGame en clásico', () => {
-  it('baraja el pack elegido y deja la partida en setup', () => {
+  it('reparte el pack elegido entre las cartas iniciales y el mazo', () => {
     const room = classicRoom();
     const baseIds = songs.filter((s) => s.packId === 'base').map((s) => s.id).sort();
+    const dealt = room.players.flatMap((p) => p.timeline);
     expect(room.status).toBe('setup');
     expect(room.rosco).toBeNull();
     expect(room.currentPlayerIndex).toBe(0);
-    expect(room.deck.map((s) => s.id).sort()).toEqual(baseIds);
+    expect([...dealt, ...room.deck].map((s) => s.id).sort()).toEqual(baseIds);
   });
 
-  it('arranca con todos los puntajes en cero', () => {
+  it('da a cada jugador una carta inicial que no suma puntos', () => {
     const room = classicRoom(3);
+    expect(room.players.map((p) => p.timeline.length)).toEqual([1, 1, 1]);
     expect(room.players.map((p) => p.score)).toEqual([0, 0, 0]);
+  });
+
+  it('la primera carta ya exige decidir antes o después', () => {
+    const room = classicRoom();
+    const [startingCard] = room.players[0].timeline;
+    const later = room.deck.find((s) => s.year > startingCard.year);
+    if (!later) throw new Error('el pack base debería tener una canción posterior');
+    room.deck = [later];
+
+    rm.flipCard(room.code);
+    rm.selectPosition(room.code, 0);
+    expect(rm.placeCard(room.code).validationResult).toBe(false);
   });
 });
 

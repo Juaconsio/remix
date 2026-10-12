@@ -55,6 +55,7 @@ routes to `/game/:code` or `/rosco/:code`.
 
 Status: `lobby` → `setup` → `round_active` → `validating` → (next turn or) `finished`.
 
+`game:start` deals every player one revealed starting card from the deck; it does not score.
 Each turn the active player emits `game:flip` (draws a card) → `game:select` (picks a
 timeline position) → `game:place` (confirms). The reveal stays on screen until the active
 player or the host emits `game:next`: the result is when the table reacts.

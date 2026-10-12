@@ -224,8 +224,12 @@ export function startGame(code: string): Room {
     return room;
   }
 
-  const packSongs = songs.filter((s) => s.packId === room.config.packId);
-  room.deck = shuffle(packSongs);
+  const deck = shuffle(songs.filter((s) => s.packId === room.config.packId));
+  room.players.forEach((p) => {
+    const startingCard = deck.shift();
+    p.timeline = startingCard ? [startingCard] : [];
+  });
+  room.deck = deck;
   room.rosco = null;
   room.status = 'setup';
   saveRooms();
