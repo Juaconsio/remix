@@ -7,11 +7,24 @@ interface RevealOverlayProps {
   isVisible: boolean;
   result: boolean | null;
   signal?: SongSignal;
+  canAdvance: boolean;
+  isLastTurn: boolean;
+  waitingFor: string;
+  onNext: () => void;
 }
 
 const SLIDE = { type: 'spring', damping: 28, stiffness: 220 } as const;
 
-export function RevealOverlay({ song, isVisible, result, signal }: RevealOverlayProps) {
+export function RevealOverlay({
+  song,
+  isVisible,
+  result,
+  signal,
+  canAdvance,
+  isLastTurn,
+  waitingFor,
+  onNext,
+}: RevealOverlayProps) {
   const prefersReduced = useReducedMotion() ?? false;
   const primary = signal?.primary ?? '#ff5722';
 
@@ -123,8 +136,8 @@ export function RevealOverlay({ song, isVisible, result, signal }: RevealOverlay
             </p>
             <p
               style={{
-                fontFamily: "'Sora', sans-serif",
-                fontWeight: 800,
+                fontFamily: 'var(--cut-font-display)',
+                fontWeight: 'var(--cut-font-display-weight)',
                 fontStyle: 'italic',
                 fontSize: 'clamp(22px, 7vw, 36px)',
                 color: '#fff4ed',
@@ -142,7 +155,7 @@ export function RevealOverlay({ song, isVisible, result, signal }: RevealOverlay
               <motion.div
                 initial={{ opacity: 0, y: prefersReduced ? 0 : 20 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={prefersReduced ? { duration: 0 } : { duration: 0.4, delay: 0.85, ease: [0.34, 1.56, 0.64, 1] }}
+                transition={prefersReduced ? { duration: 0 } : { duration: 0.4, delay: 0.6, ease: [0.34, 1.56, 0.64, 1] }}
                 style={{ marginTop: 28 }}
               >
                 <div
@@ -159,8 +172,8 @@ export function RevealOverlay({ song, isVisible, result, signal }: RevealOverlay
                 >
                   <span
                     style={{
-                      fontFamily: "'Sora', sans-serif",
-                      fontWeight: 800,
+                      fontFamily: 'var(--cut-font-display)',
+                      fontWeight: 'var(--cut-font-display-weight)',
                       fontStyle: 'italic',
                       fontSize: 20,
                       letterSpacing: -0.3,
@@ -168,22 +181,45 @@ export function RevealOverlay({ song, isVisible, result, signal }: RevealOverlay
                   >
                     {result ? 'correcto.' : 'incorrecto.'}
                   </span>
-                  <span
-                    style={{
-                      fontFamily: "'Space Mono', monospace",
-                      fontWeight: 700,
-                      fontSize: 11,
-                      textTransform: 'uppercase',
-                      letterSpacing: '0.1em',
-                      opacity: 0.65,
-                    }}
-                  >
-                    {result ? '+1 pt' : `era ${song.year}`}
-                  </span>
+                  {result && (
+                    <span
+                      style={{
+                        fontFamily: "'Space Mono', monospace",
+                        fontWeight: 700,
+                        fontSize: 11,
+                        textTransform: 'uppercase',
+                        letterSpacing: '0.1em',
+                        opacity: 0.65,
+                      }}
+                    >
+                      +1 pt
+                    </span>
+                  )}
                 </div>
               </motion.div>
             )}
           </AnimatePresence>
+
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={prefersReduced ? { duration: 0 } : { duration: 0.3, delay: 1.1 }}
+            style={{ position: 'absolute', left: 20, right: 20, bottom: 32 }}
+          >
+            {canAdvance ? (
+              <button onClick={onNext} className="btn-game">
+                <span>{isLastTurn ? 'ver resultados.' : 'siguiente.'}</span>
+                <span>→</span>
+              </button>
+            ) : (
+              <p
+                className="font-mono-cut text-center"
+                style={{ fontSize: 11, color: 'rgba(255,244,237,0.6)' }}
+              >
+                esperando a {waitingFor}…
+              </p>
+            )}
+          </motion.div>
         </motion.div>
       )}
     </AnimatePresence>

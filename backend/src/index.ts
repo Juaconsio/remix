@@ -149,15 +149,21 @@ io.on('connection', (socket) => {
     if (!room) return;
     const activePlayer = room.players[room.currentPlayerIndex];
     if (activePlayer?.id !== socket.id) return;
+    if (room.status !== 'round_active') return;
     try {
       const updated = rm.placeCard(room.code);
       broadcastRoom(updated, 'game:state');
+    } catch {}
+  });
 
-      // Auto-avance a siguiente turno tras 2.5s
-      setTimeout(() => {
-        const next = rm.nextTurn(room.code);
-        broadcastRoom(next, 'game:state');
-      }, 2500);
+  socket.on('game:next', () => {
+    const room = rm.getRoomByPlayer(socket.id);
+    if (!room || room.status !== 'validating') return;
+    const activePlayer = room.players[room.currentPlayerIndex];
+    if (activePlayer?.id !== socket.id && room.hostId !== socket.id) return;
+    try {
+      const next = rm.nextTurn(room.code);
+      broadcastRoom(next, 'game:state');
     } catch {}
   });
 

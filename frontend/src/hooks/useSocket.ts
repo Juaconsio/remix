@@ -15,6 +15,7 @@ export interface SocketContextValue {
   flipCard: () => void;
   selectPosition: (position: number) => void;
   placeCard: () => void;
+  nextTurn: () => void;
   skipCard: () => void;
   roscoAward: (playerId: string, award: Award) => void;
   roscoSkip: () => void;

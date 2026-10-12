@@ -190,7 +190,7 @@ export default function Playground() {
                 <div className="px-5 pt-4 pb-1">
                   <Label>playerheader</Label>
                 </div>
-                <PlayerHeader player={MOCK_PLAYER} round={[3, 10]} signal={signal} />
+                <PlayerHeader player={MOCK_PLAYER} cardsLeft={14} signal={signal} />
               </>
             )}
 
@@ -315,7 +315,7 @@ export default function Playground() {
           <p className="font-mono-cut text-muted mb-4" style={{ fontSize: 9 }}>— tipografía</p>
           <div className="flex flex-col gap-6 mb-10">
             <div>
-              <p className="font-mono-cut text-muted mb-1" style={{ fontSize: 8 }}>Sora 800 italic — font-display</p>
+              <p className="font-mono-cut text-muted mb-1" style={{ fontSize: 8 }}>Figtree 900 italic — font-display</p>
               <p className="font-display text-ink" style={{ fontSize: 48, letterSpacing: -3, lineHeight: 0.9 }}>
                 remix.
               </p>

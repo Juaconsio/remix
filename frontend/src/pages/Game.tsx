@@ -8,9 +8,11 @@ import { Timeline } from '../game/components/Timeline';
 import { RevealOverlay } from '../game/components/RevealOverlay';
 import { getSongSignal, DEFAULT_SIGNAL } from '../utils/songColor';
 
+const WIN_SCORE = 7; // espejo de WIN_SCORE en backend/src/rooms/roomManager.ts
+
 export default function Game() {
   const navigate = useNavigate();
-  const { room, myPlayerId, flipCard, selectPosition, placeCard, skipCard } = useSocket();
+  const { room, myPlayerId, flipCard, selectPosition, placeCard, skipCard, nextTurn } = useSocket();
   const isActivePlayer = room?.players[room.currentPlayerIndex]?.id === myPlayerId;
   const {
     provider,
@@ -49,8 +51,8 @@ export default function Game() {
 
   const { primary, onPrimary } = signal;
 
-  const totalCards = 10;
-  const roundNum   = room.players.reduce((max, p) => Math.max(max, p.timeline.length), 0) + 1;
+  const isHost      = room.hostId === myPlayerId;
+  const isLastTurn  = room.deck.length === 0 || room.players.some((p) => p.score >= WIN_SCORE);
 
   const playerProps = {
     isLoading:    activePlayer.isLoading,
@@ -82,7 +84,7 @@ export default function Game() {
         {/* Header */}
         <PlayerHeader
           player={currentPlayer}
-          round={[roundNum, totalCards]}
+          cardsLeft={room.deck.length}
           signal={signal}
         />
 
@@ -95,7 +97,7 @@ export default function Game() {
               </p>
             ) : (
               <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full opacity-75 border-[1.5px] border-song-on-primary dark:border-ink">
-                <span className="font-mono-cut text-song-on-primary dark:text-ink" style={{ fontSize: 10 }}>
+                <span className="font-mono-cut text-song-on-primary dark:text-ink" style={{ fontSize: 11 }}>
                   turno de {currentPlayer.name}
                 </span>
               </div>
@@ -184,6 +186,10 @@ export default function Game() {
         isVisible={isRevealed}
         result={room.validationResult}
         signal={signal}
+        canAdvance={isActivePlayer || isHost}
+        isLastTurn={isLastTurn}
+        waitingFor={currentPlayer.name}
+        onNext={nextTurn}
       />
 
       {/* YouTube iframe — always off-screen, never display:none */}

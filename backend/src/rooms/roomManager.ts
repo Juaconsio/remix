@@ -140,8 +140,8 @@ export function removePlayer(playerId: string): Room | undefined {
     }
 
     // Si el que cae es el jugador activo y está reteniendo el turno, avanzamos.
-    // En 'validating' ya hay un auto-avance pendiente (setTimeout en index.ts),
-    // así que no tocamos el turno para no avanzar dos veces.
+    // En 'validating' el turno lo avanza el host con game:next (index.ts), que
+    // sigue disponible aunque el activo se haya ido.
     const activeId = room.players[room.currentPlayerIndex]?.id;
     if (activeId === playerId && (room.status === 'setup' || room.status === 'round_active')) {
       if (room.rosco) rosco.releaseTurn(room);

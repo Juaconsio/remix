@@ -101,6 +101,10 @@ export function SocketProvider({ children }: { children: ReactNode }) {
     socketRef.current?.emit('game:place');
   }, []);
 
+  const nextTurn = useCallback(() => {
+    socketRef.current?.emit('game:next');
+  }, []);
+
   const skipCard = useCallback(() => {
     socketRef.current?.emit('game:skip');
   }, []);
@@ -147,6 +151,7 @@ export function SocketProvider({ children }: { children: ReactNode }) {
     flipCard,
     selectPosition,
     placeCard,
+    nextTurn,
     notifyAudioStarted,
     onAudioPlay,
     skipCard,

@@ -71,6 +71,7 @@ export interface ClientToServerEvents {
   'game:flip': () => void;
   'game:select': (payload: { position: number }) => void;
   'game:place': () => void;
+  'game:next': () => void;
   'game:audio:started': () => void;
   'game:skip': () => void;
   'rosco:award': (payload: { playerId: string; award: Award }) => void;
