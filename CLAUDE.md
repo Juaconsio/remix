@@ -92,8 +92,6 @@ off-screen.
 ## Rules
 
 - Do not install new libraries without a clear need.
-- Do not touch `roomManager.ts` or the socket handlers in `backend/src/index.ts` unless
-  explicitly asked: classic mode has no tests yet to catch a regression.
 - Never emit a rosco room with `io.to(code)`: go through `broadcastRoom()`, which redacts per
   socket, or the answers leak.
 - Types are mirrored by hand, there is no shared package: `backend/src/types.ts` ↔
