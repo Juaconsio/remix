@@ -31,7 +31,7 @@ services:
 
   cloudflared:
     image: cloudflare/cloudflared:latest
-    command: tunnel --no-autoupdate --url http://frontend:3000
+    command: tunnel --no-autoupdate --protocol http2 --url http://frontend:3000
     depends_on:
       - frontend
     restart: unless-stopped
