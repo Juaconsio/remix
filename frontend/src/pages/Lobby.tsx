@@ -11,6 +11,7 @@ import { cn } from '../utils/cn';
 const PACKS = [
   { id: 'base',        name: 'Pack Base',    description: '20 hits de todos los tiempos (1967–2023)' },
   { id: 'indie-vibes', name: 'Indie Vibes',  description: '15 canciones indie/alternativas' },
+  { id: 'pop-latino',  name: 'Pop Latino',   description: 'Morat, Camilo, Greeicy, Yatra y más' },
 ];
 
 const MODES: { id: GameMode; name: string; description: string }[] = [

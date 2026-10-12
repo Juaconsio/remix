@@ -109,6 +109,7 @@ export default function Rosco() {
 
       {isHost && activeCell ? (
         <RoscoControls
+          key={letterKey}
           subMode={subMode}
           cell={activeCell}
           players={room.players}

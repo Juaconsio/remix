@@ -67,27 +67,40 @@ export function RoscoControls({
   onPass,
 }: RoscoControlsProps) {
   const [selectedPlayerId, setSelectedPlayerId] = useState<string | null>(null);
+  const [answerRevealed, setAnswerRevealed] = useState(false);
 
   return (
     <div className="px-5 mt-4 flex flex-col gap-3">
-      <div className="rounded-[14px] px-4 py-3 text-center bg-tint" style={{ border: '1.5px solid var(--cut-border)' }}>
+      <button
+        onClick={() => setAnswerRevealed((revealed) => !revealed)}
+        className="rounded-[14px] px-4 py-3 text-center bg-tint"
+        style={{ border: '1.5px solid var(--cut-border)' }}
+      >
         <p className="font-mono-cut text-muted mb-1" style={{ fontSize: 11 }}>
           respuesta
         </p>
-        <p className="font-display text-ink" style={{ fontStyle: 'italic', fontWeight: 700, fontSize: 17, letterSpacing: -0.3 }}>
-          {cell.song?.title ?? '—'}
-        </p>
-        <p className="font-mono-cut text-muted" style={{ fontSize: 11 }}>
-          {cell.song?.artist ?? ''}
-        </p>
-      </div>
+        {answerRevealed ? (
+          <>
+            <p className="font-display text-ink" style={{ fontStyle: 'italic', fontWeight: 700, fontSize: 17, letterSpacing: -0.3 }}>
+              {cell.song?.title ?? '—'}
+            </p>
+            <p className="font-mono-cut text-muted" style={{ fontSize: 11 }}>
+              {cell.song?.artist ?? ''}
+            </p>
+          </>
+        ) : (
+          <p className="font-display text-ink" style={{ fontStyle: 'italic', fontWeight: 700, fontSize: 15, opacity: 0.6 }}>
+            toca para ver la respuesta
+          </p>
+        )}
+      </button>
 
       {subMode === 'turnos' ? (
         <>
           <p className="font-mono-cut text-muted text-center" style={{ fontSize: 11 }}>
             turno de {players[currentPlayerIndex]?.name}
           </p>
-          <AwardButtons cell={cell} onPick={onCorrect} />
+          <AwardButtons cell={cell} disabled={!answerRevealed} onPick={onCorrect} />
           <div className="flex gap-2">
             <button
               onClick={onWrong}
@@ -132,7 +145,7 @@ export function RoscoControls({
           </div>
           <AwardButtons
             cell={cell}
-            disabled={!selectedPlayerId}
+            disabled={!selectedPlayerId || !answerRevealed}
             onPick={(award) => {
               if (!selectedPlayerId) return;
               onAward(selectedPlayerId, award);

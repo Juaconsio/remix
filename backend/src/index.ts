@@ -7,7 +7,7 @@ import { existsSync } from 'fs';
 import { fileURLToPath } from 'url';
 import previewRouter from './routes/preview.js';
 import youtubeSearchRouter from './routes/youtubeSearch.js';
-import youtubePlaylistMapRouter from './routes/youtubePlaylistMap.js';
+import youtubePlaylistMapRouter, { resolvedVideoId } from './routes/youtubePlaylistMap.js';
 import * as rm from './rooms/roomManager.js';
 import { redactRoom } from './rooms/publicRoom.js';
 import type { Room } from './rooms/types.js';
@@ -195,7 +195,7 @@ io.on('connection', (socket) => {
     const trackId = provider === 'spotify'
       ? (card.providerIds?.spotify ?? String(card.deezerId))
       : provider === 'youtube'
-      ? (card.providerIds?.youtube ?? '')
+      ? (card.providerIds?.youtube ?? resolvedVideoId(card.id) ?? '')
       : String(card.deezerId);
 
     // Emitir a todos menos al jugador activo (él ya está reproduciendo)

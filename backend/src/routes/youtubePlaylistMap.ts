@@ -1,5 +1,8 @@
 import { Router } from 'express';
+import { readFileSync, writeFileSync } from 'fs';
+import { join } from 'path';
 import { allSongs as songs } from '../songs.js';
+import { getRoscoPack } from '../rooms/roscoPacks.js';
 
 const router = Router();
 
@@ -8,10 +11,32 @@ interface YTSearchItem {
   snippet: { title: string; channelTitle: string };
 }
 
-// Cache en módulo para no repetir llamadas a la API entre requests
-const cache = new Map<string, string>(); // songId → videoId
+// Cada búsqueda de la Data API cuesta 100 de las 10.000 unidades diarias de cuota.
+const CACHE_FILE = join(process.cwd(), 'youtube-cache.json');
+
+function loadCache(): Map<string, string> {
+  try {
+    return new Map(Object.entries(JSON.parse(readFileSync(CACHE_FILE, 'utf8')) as Record<string, string>));
+  } catch {
+    return new Map();
+  }
+}
+
+function saveCache() {
+  try {
+    writeFileSync(CACHE_FILE, JSON.stringify(Object.fromEntries(cache), null, 2));
+  } catch (err) {
+    console.warn('[YT playlist-map] No se pudo guardar el cache:', err);
+  }
+}
+
+const cache = loadCache();
 // Videos confirmados como no-embeddables (no volver a incluirlos)
 const nonEmbeddable = new Set<string>();
+
+export function resolvedVideoId(songId: string): string | undefined {
+  return cache.get(songId);
+}
 
 async function getEmbeddableIds(videoIds: string[], apiKey: string): Promise<Set<string>> {
   if (videoIds.length === 0) return new Set();
@@ -68,7 +93,8 @@ router.get('/', async (req, res) => {
   const apiKey = process.env.YOUTUBE_API_KEY;
   if (!apiKey) { res.status(500).json({ error: 'YOUTUBE_API_KEY no configurada' }); return; }
 
-  const pack = songs.filter((s) => s.packId === packId);
+  const pack = getRoscoPack(packId)?.entries.map((e) => e.song)
+    ?? songs.filter((s) => s.packId === packId);
   if (pack.length === 0) { res.status(404).json({ error: `Pack "${packId}" no encontrado` }); return; }
 
   const map: Record<string, string> = {};
@@ -104,6 +130,7 @@ router.get('/', async (req, res) => {
     }
   }
 
+  saveCache();
   res.json({ map });
 });
 

@@ -46,17 +46,16 @@ export function useGameAudio(
     return () => clearTimeout(timer);
   }, [room?.status, stop, ytPlayer]);
 
-  // Fetch mapa YouTube cuando el provider es youtube
+  const songPackId = room?.config.mode === 'rosco' ? room.config.roscoPackId : room?.config.packId;
   useEffect(() => {
-    if (provider !== 'youtube' || !room?.config.packId) return;
-    const packId = room.config.packId;
-    fetch(`/api/youtube/playlist-map?packId=${encodeURIComponent(packId)}`)
+    if (provider !== 'youtube' || !songPackId) return;
+    fetch(`/api/youtube/playlist-map?packId=${encodeURIComponent(songPackId)}`)
       .then((r) => r.json())
       .then((data: { map?: Record<string, string> }) => {
         if (data.map) ytMapRef.current = data.map;
       })
       .catch((err) => console.warn('[YT playlist-map] error:', err));
-  }, [provider, room?.config.packId]);
+  }, [provider, songPackId]);
 
   // Audio sincronizado para jugadores no activos
   useEffect(() => {
@@ -64,12 +63,13 @@ export function useGameAudio(
     return onAudioPlay(({ trackId, provider: p, hookStart, hookDuration }) => {
       if (canPlay) return;
       if (p === 'youtube') {
-        ytPlayer.play(trackId, hookStart, hookDuration);
+        const videoId = trackId || (card ? ytMapRef.current[card.id] : undefined);
+        if (videoId) ytPlayer.play(videoId, hookStart, hookDuration);
       } else {
         play(trackId, p, hookStart, hookDuration);
       }
     });
-  }, [room?.config.syncAudio, onAudioPlay, play, ytPlayer, canPlay]);
+  }, [room?.config.syncAudio, onAudioPlay, play, ytPlayer, canPlay, card]);
 
   // Auto-skip cuando el video no permite embedding en mobile (150/101)
   useEffect(() => {
