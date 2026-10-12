@@ -50,6 +50,7 @@
 :root {
   --cut-font-display: 'Figtree', sans-serif;
   --cut-font-display-weight: 900;
+  --cut-ease-out: cubic-bezier(0.23, 1, 0.32, 1);
 
   --cut-ink:     #0e0e0e;
   --cut-surface: #fff4ed;
@@ -140,11 +141,11 @@ html, body {
   font-size: 20px;
   letter-spacing: -0.3px;
   cursor: pointer;
-  transition: opacity 120ms;
+  transition: transform 160ms var(--cut-ease-out), opacity 120ms;
 }
 
 .btn-primary:disabled { opacity: 0.35; }
-.btn-primary:active   { opacity: 0.75; }
+.btn-primary:active:not(:disabled) { opacity: 0.75; transform: scale(0.97); }
 
 .btn-secondary {
   display: flex;
@@ -162,11 +163,11 @@ html, body {
   letter-spacing: 0.18em;
   text-transform: uppercase;
   cursor: pointer;
-  transition: opacity 120ms;
+  transition: transform 160ms var(--cut-ease-out), opacity 120ms;
 }
 
 .btn-secondary:disabled { opacity: 0.35; }
-.btn-secondary:active   { opacity: 0.75; }
+.btn-secondary:active:not(:disabled) { opacity: 0.75; transform: scale(0.97); }
 
 /* Secondary on dark (ink) backgrounds */
 .btn-secondary-light {
@@ -211,11 +212,11 @@ html, body {
   font-size: 20px;
   letter-spacing: -0.3px;
   cursor: pointer;
-  transition: opacity 120ms;
+  transition: transform 160ms var(--cut-ease-out), opacity 120ms;
 }
 
 .btn-game:disabled { opacity: 0.35; cursor: default; }
-.btn-game:active   { opacity: 0.75; }
+.btn-game:active:not(:disabled) { opacity: 0.75; transform: scale(0.97); }
 
 .cut-diagonal {
   position: absolute;
@@ -234,4 +235,8 @@ html, body {
     transition-duration: 0.01ms !important;
     scroll-behavior: auto !important;
   }
+
+  .btn-primary:active:not(:disabled),
+  .btn-secondary:active:not(:disabled),
+  .btn-game:active:not(:disabled) { transform: none; }
 }

@@ -52,7 +52,7 @@ function OptionButton({
     <button
       onClick={onClick}
       className={cn(
-        'w-full text-left px-4 py-3 rounded-[14px] cursor-pointer transition-[border-color] duration-150',
+        'w-full text-left px-4 py-3 rounded-[14px] cursor-pointer transition-[border-color,transform] duration-150 ease-[cubic-bezier(0.23,1,0.32,1)] active:scale-[0.97] motion-reduce:active:scale-100',
         isSelected ? 'bg-tint' : 'bg-transparent',
       )}
       style={{ border: isSelected ? '2.5px solid var(--cut-ink)' : '1.5px solid var(--cut-border)' }}

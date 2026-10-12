@@ -14,6 +14,30 @@ interface RevealOverlayProps {
 }
 
 const SLIDE = { type: 'spring', damping: 28, stiffness: 220 } as const;
+const EASE_OUT = [0.23, 1, 0.32, 1] as const;
+const BADGE_DELAY = 0.6;
+
+function badgeEntrance(isCorrect: boolean, prefersReduced: boolean) {
+  if (prefersReduced) {
+    return {
+      initial: { opacity: 0 },
+      animate: { opacity: 1 },
+      transition: { duration: 0.15, delay: BADGE_DELAY },
+    };
+  }
+  if (isCorrect) {
+    return {
+      initial: { opacity: 0, scale: 0.85 },
+      animate: { opacity: 1, scale: 1 },
+      transition: { type: 'spring', duration: 0.45, bounce: 0.35, delay: BADGE_DELAY },
+    } as const;
+  }
+  return {
+    initial: { opacity: 0, y: 8 },
+    animate: { opacity: 1, y: 0 },
+    transition: { duration: 0.2, ease: EASE_OUT, delay: BADGE_DELAY },
+  };
+}
 
 export function RevealOverlay({
   song,
@@ -153,10 +177,8 @@ export function RevealOverlay({
           <AnimatePresence>
             {result !== null && (
               <motion.div
-                initial={{ opacity: 0, y: prefersReduced ? 0 : 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={prefersReduced ? { duration: 0 } : { duration: 0.4, delay: 0.6, ease: [0.34, 1.56, 0.64, 1] }}
-                style={{ marginTop: 28 }}
+                {...badgeEntrance(result, prefersReduced)}
+                style={{ marginTop: 28, transformOrigin: 'left center' }}
               >
                 <div
                   style={{
