@@ -50,7 +50,7 @@ export function createRoom(hostId: string, hostName: string): Room {
     players: [{ id: hostId, name: hostName, timeline: [], score: 0, connected: true }],
     config: {
       packId: 'base',
-      provider: 'deezer',
+      provider: 'youtube',
       syncAudio: false,
       mode: 'classic',
       roscoSubMode: 'paralelo',

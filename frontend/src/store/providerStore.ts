@@ -12,7 +12,7 @@ interface ProviderState {
 export const useProviderStore = create<ProviderState>()(
   persist(
     (set) => ({
-      provider: 'deezer',
+      provider: 'youtube',
       setProvider: (provider) => set({ provider }),
     }),
     { name: 'music-provider' }

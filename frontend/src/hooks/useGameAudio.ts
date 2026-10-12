@@ -29,7 +29,7 @@ export function useGameAudio(
   const { isPlaying, isLoading, progress, error, play, stop } = useAudio();
   const ytPlayer = useYouTubePlayer();
 
-  const provider = room?.config.provider ?? 'deezer';
+  const provider = room?.config.provider ?? 'youtube';
   const [providerError, setProviderError] = useState<string | null>(null);
   const ytMapRef = useRef<Record<string, string>>({});
 
