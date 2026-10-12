@@ -63,12 +63,13 @@ export function useGameAudio(
     return onAudioPlay(({ trackId, provider: p, hookStart, hookDuration }) => {
       if (canPlay) return;
       if (p === 'youtube') {
-        ytPlayer.play(trackId, hookStart, hookDuration);
+        const videoId = trackId || (card ? ytMapRef.current[card.id] : undefined);
+        if (videoId) ytPlayer.play(videoId, hookStart, hookDuration);
       } else {
         play(trackId, p, hookStart, hookDuration);
       }
     });
-  }, [room?.config.syncAudio, onAudioPlay, play, ytPlayer, canPlay]);
+  }, [room?.config.syncAudio, onAudioPlay, play, ytPlayer, canPlay, card]);
 
   // Auto-skip cuando el video no permite embedding en mobile (150/101)
   useEffect(() => {
