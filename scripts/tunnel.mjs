@@ -5,7 +5,7 @@ import qrcode from 'qrcode-terminal';
 const port = process.env.TUNNEL_PORT ?? '3000';
 const tunnel = spawn(
   'cloudflared',
-  ['tunnel', '--no-autoupdate', '--url', `http://localhost:${port}`],
+  ['tunnel', '--no-autoupdate', '--protocol', 'http2', '--url', `http://localhost:${port}`],
   { stdio: ['ignore', 'ignore', 'pipe'] },
 );
 
@@ -20,15 +20,27 @@ tunnel.on('error', (err) => {
 
 tunnel.on('exit', (code) => process.exit(code ?? 0));
 
+for (const signal of ['SIGINT', 'SIGTERM', 'SIGHUP']) {
+  process.on(signal, () => tunnel.kill(signal));
+}
+
 let publicUrl = null;
 let announced = false;
+let hasConnectionErrors = false;
 
 createInterface({ input: tunnel.stderr }).on('line', (line) => {
   publicUrl ??= line.match(/https:\/\/[a-z0-9-]+\.trycloudflare\.com/)?.[0] ?? null;
 
-  if (/\bERR\b/.test(line)) console.error(line);
+  if (/\bERR\b/.test(line)) {
+    hasConnectionErrors = true;
+    console.error(line);
+  }
 
   const tunnelIsReachable = line.includes('Registered tunnel connection');
+  if (announced && tunnelIsReachable && hasConnectionErrors) {
+    hasConnectionErrors = false;
+    console.log(`  Túnel reconectado → ${publicUrl}`);
+  }
   if (!publicUrl || !tunnelIsReachable || announced) return;
 
   announced = true;
