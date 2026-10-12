@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import { allSongs as songs } from '../songs.js';
+import { getRoscoPack } from '../rooms/roscoPacks.js';
 
 const router = Router();
 
@@ -68,7 +69,8 @@ router.get('/', async (req, res) => {
   const apiKey = process.env.YOUTUBE_API_KEY;
   if (!apiKey) { res.status(500).json({ error: 'YOUTUBE_API_KEY no configurada' }); return; }
 
-  const pack = songs.filter((s) => s.packId === packId);
+  const pack = getRoscoPack(packId)?.entries.map((e) => e.song)
+    ?? songs.filter((s) => s.packId === packId);
   if (pack.length === 0) { res.status(404).json({ error: `Pack "${packId}" no encontrado` }); return; }
 
   const map: Record<string, string> = {};
