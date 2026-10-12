@@ -193,7 +193,7 @@ export function CardSlot({
               className="absolute inset-0 rounded-[20px] bg-surface flex flex-col items-center justify-center gap-4 overflow-hidden border-2 border-border"
             >
               {playerError && (
-                <p className="font-mono-cut text-error text-center px-5" style={{ fontSize: 9 }}>
+                <p className="font-mono-cut text-error text-center px-5" style={{ fontSize: 11 }}>
                   {playerError}
                 </p>
               )}
@@ -237,7 +237,7 @@ export function CardSlot({
                         exit={{ opacity: 0 }}
                         transition={{ duration: 0.2 }}
                         className="font-mono-cut absolute bottom-4"
-                        style={{ fontSize: 9, color: 'color-mix(in srgb, var(--cut-ink) 30%, transparent)' }}
+                        style={{ fontSize: 11, color: 'color-mix(in srgb, var(--cut-ink) 55%, transparent)' }}
                       >
                         escucha · ubica el año
                       </motion.p>
@@ -275,7 +275,7 @@ export function CardSlot({
                 {song && (
                   <>
                     <div>
-                      <p className="font-mono-cut text-song-on-primary mb-0.75" style={{ fontSize: 9, opacity: 0.5 }}>año</p>
+                      <p className="font-mono-cut text-song-on-primary mb-0.75" style={{ fontSize: 11, opacity: 0.7 }}>año</p>
                       <p
                         className="font-display text-song-on-primary"
                         style={{ fontSize: 52, letterSpacing: -3, lineHeight: 0.9 }}
@@ -284,7 +284,7 @@ export function CardSlot({
                       </p>
                     </div>
                     <div>
-                      <p className="font-mono-cut text-song-on-primary mb-0.75" style={{ fontSize: 9, opacity: 0.5 }}>artista</p>
+                      <p className="font-mono-cut text-song-on-primary mb-0.75" style={{ fontSize: 11, opacity: 0.7 }}>artista</p>
                       <p
                         className="font-serif-accent text-song-on-primary"
                         style={{ fontSize: 20, lineHeight: 1.1 }}
@@ -293,7 +293,7 @@ export function CardSlot({
                       </p>
                     </div>
                     <div>
-                      <p className="font-mono-cut text-song-on-primary mb-0.75" style={{ fontSize: 9, opacity: 0.5 }}>canción</p>
+                      <p className="font-mono-cut text-song-on-primary mb-0.75" style={{ fontSize: 11, opacity: 0.7 }}>canción</p>
                       <p
                         className="font-display text-song-on-primary overflow-hidden text-ellipsis whitespace-nowrap"
                         style={{ fontSize: 20, letterSpacing: -0.5 }}

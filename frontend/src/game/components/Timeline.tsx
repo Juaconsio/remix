@@ -32,7 +32,7 @@ export function Timeline({
     >
       <p
         className="font-mono-cut mb-2.5 text-song-on-primary/50 dark:text-ink/50"
-        style={{ fontSize: 10 }}
+        style={{ fontSize: 11 }}
       >
         línea de tiempo
       </p>
@@ -62,7 +62,7 @@ export function Timeline({
                 )}
                 style={{ cursor: canInteract ? 'pointer' : 'default' }}
               >
-                <span className="font-mono-cut" style={{ fontSize: 10 }}>
+                <span className="font-mono-cut" style={{ fontSize: 12 }}>
                   {selectedPosition === i ? '✓' : '+'}
                 </span>
               </button>
@@ -79,10 +79,10 @@ export function Timeline({
                     '{String(timeline[i].year).slice(-2)}
                   </div>
                   <div
-                    className="font-mono-cut text-song-on-primary/60 dark:text-ink/60 mt-0.5 max-w-20 overflow-hidden text-ellipsis whitespace-nowrap"
-                    style={{ fontSize: 8 }}
+                    className="font-mono-cut text-song-on-primary/75 dark:text-ink/75 mt-0.5 max-w-24 overflow-hidden text-ellipsis whitespace-nowrap"
+                    style={{ fontSize: 10, letterSpacing: '0.04em' }}
                   >
-                    {timeline[i].title.slice(0, 10)}
+                    {timeline[i].title}
                   </div>
                 </div>
               )}

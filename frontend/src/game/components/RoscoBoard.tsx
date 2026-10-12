@@ -56,7 +56,7 @@ export function RoscoBoard({ board, activeIndex }: RoscoBoardProps) {
       <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none text-center">
         {active ? (
           <>
-            <span className="font-mono-cut text-muted" style={{ fontSize: 9, opacity: 0.5 }}>
+            <span className="font-mono-cut text-muted" style={{ fontSize: 11 }}>
               letra
             </span>
             <span className="font-display" style={{ fontSize: 72, lineHeight: 1, letterSpacing: -4, color: 'var(--color-accent)' }}>
@@ -68,7 +68,7 @@ export function RoscoBoard({ board, activeIndex }: RoscoBoardProps) {
             fin.
           </span>
         )}
-        <span className="font-mono-cut text-muted mt-2" style={{ fontSize: 9, opacity: 0.5 }}>
+        <span className="font-mono-cut text-muted mt-2" style={{ fontSize: 11 }}>
           {correct}/{board.length} acertadas
         </span>
       </div>

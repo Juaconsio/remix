@@ -36,7 +36,7 @@ export function AudioPlayer({
   return (
     <div style={{ padding: '12px 20px' }}>
       {error && (
-        <p style={{ ...monoStyle, fontSize: 10, color: '#e8341c', textAlign: 'center', marginBottom: 10 }}>
+        <p style={{ ...monoStyle, fontSize: 11, color: '#e8341c', textAlign: 'center', marginBottom: 10 }}>
           {error}
         </p>
       )}
@@ -101,7 +101,7 @@ export function AudioPlayer({
           <div
             style={{
               ...monoStyle,
-              fontSize: 9,
+              fontSize: 11,
               color: onPrimary,
               display: 'flex',
               justifyContent: 'space-between',

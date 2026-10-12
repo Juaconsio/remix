@@ -71,20 +71,20 @@ export function RoscoControls({
   return (
     <div className="px-5 mt-4 flex flex-col gap-3">
       <div className="rounded-[14px] px-4 py-3 text-center bg-tint" style={{ border: '1.5px solid var(--cut-border)' }}>
-        <p className="font-mono-cut text-muted mb-1" style={{ fontSize: 9, opacity: 0.5 }}>
+        <p className="font-mono-cut text-muted mb-1" style={{ fontSize: 11 }}>
           respuesta
         </p>
         <p className="font-display text-ink" style={{ fontStyle: 'italic', fontWeight: 700, fontSize: 17, letterSpacing: -0.3 }}>
           {cell.song?.title ?? '—'}
         </p>
-        <p className="font-mono-cut text-muted" style={{ fontSize: 10 }}>
+        <p className="font-mono-cut text-muted" style={{ fontSize: 11 }}>
           {cell.song?.artist ?? ''}
         </p>
       </div>
 
       {subMode === 'turnos' ? (
         <>
-          <p className="font-mono-cut text-muted text-center" style={{ fontSize: 10 }}>
+          <p className="font-mono-cut text-muted text-center" style={{ fontSize: 11 }}>
             turno de {players[currentPlayerIndex]?.name}
           </p>
           <AwardButtons cell={cell} onPick={onCorrect} />
@@ -107,7 +107,7 @@ export function RoscoControls({
         </>
       ) : (
         <>
-          <p className="font-mono-cut text-muted text-center" style={{ fontSize: 10 }}>
+          <p className="font-mono-cut text-muted text-center" style={{ fontSize: 11 }}>
             ¿quién la acertó?
           </p>
           <div className="flex flex-wrap gap-2 justify-center">

@@ -39,7 +39,7 @@ export function SettingsPanel() {
             {/* Handle */}
             <div className="w-10 h-1 rounded-full bg-border mx-auto mb-6" />
 
-            <p className="font-mono-cut text-muted mb-5" style={{ fontSize: 10 }}>
+            <p className="font-mono-cut text-muted mb-5" style={{ fontSize: 11 }}>
               ajustes
             </p>
 
@@ -53,7 +53,7 @@ export function SettingsPanel() {
                   {effectiveDark ? 'modo oscuro.' : 'modo claro.'}
                 </p>
                 {override === null && (
-                  <p className="font-mono-cut text-muted mt-1" style={{ fontSize: 9 }}>
+                  <p className="font-mono-cut text-muted mt-1" style={{ fontSize: 11 }}>
                     según el sistema
                   </p>
                 )}
@@ -78,7 +78,7 @@ export function SettingsPanel() {
               <button
                 onClick={() => setOverride(null)}
                 className="font-mono-cut text-muted bg-transparent border-none cursor-pointer underline underline-offset-[3px] mt-4 p-0"
-                style={{ fontSize: 9 }}
+                style={{ fontSize: 11 }}
               >
                 usar preferencia del sistema
               </button>

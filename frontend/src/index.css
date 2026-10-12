@@ -33,7 +33,7 @@
   --color-cream:  #fff4ed;   /* always the warm light; buttons on dark diagonal */
 
   /* Typography */
-  --font-display: 'Sora', sans-serif;
+  --font-display: var(--cut-font-display);
   --font-mono:    'Space Mono', monospace;
   --font-serif:   'Instrument Serif', serif;
 }
@@ -48,6 +48,9 @@
 
 /* ── Layer 1: Runtime CSS custom properties ─────────────────────── */
 :root {
+  --cut-font-display: 'Figtree', sans-serif;
+  --cut-font-display-weight: 900;
+
   --cut-ink:     #0e0e0e;
   --cut-surface: #fff4ed;
   --cut-bg:      #fff4ed;
@@ -102,8 +105,8 @@ html, body {
 
 /* ── Cut typography utilities ───────────────────────────────────── */
 .font-display {
-  font-family: 'Sora', sans-serif;
-  font-weight: 800;
+  font-family: var(--cut-font-display);
+  font-weight: var(--cut-font-display-weight);
   font-style: italic;
 }
 
@@ -131,8 +134,8 @@ html, body {
   border: none;
   border-radius: 999px;
   box-shadow: 0 0 0 1.5px var(--cut-ink);
-  font-family: 'Sora', sans-serif;
-  font-weight: 800;
+  font-family: var(--cut-font-display);
+  font-weight: var(--cut-font-display-weight);
   font-style: italic;
   font-size: 20px;
   letter-spacing: -0.3px;
@@ -179,7 +182,7 @@ html, body {
   border: 1.5px solid var(--cut-border);
   border-radius: 999px;
   color: var(--cut-ink);
-  font-family: 'Sora', sans-serif;
+  font-family: var(--cut-font-display);
   font-style: italic;
   font-size: 16px;
   outline: none;
@@ -202,8 +205,8 @@ html, body {
   border: none;
   border-radius: 999px;
   box-shadow: 0 0 0 1.5px var(--color-ground);
-  font-family: 'Sora', sans-serif;
-  font-weight: 800;
+  font-family: var(--cut-font-display);
+  font-weight: var(--cut-font-display-weight);
   font-style: italic;
   font-size: 20px;
   letter-spacing: -0.3px;
@@ -213,6 +216,15 @@ html, body {
 
 .btn-game:disabled { opacity: 0.35; cursor: default; }
 .btn-game:active   { opacity: 0.75; }
+
+.cut-diagonal {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  background: var(--color-ground);
+  clip-path: polygon(0 56%, 100% 42%, 100% 100%, 0 100%);
+}
 
 /* ── prefers-reduced-motion ─────────────────────────────────────── */
 @media (prefers-reduced-motion: reduce) {
