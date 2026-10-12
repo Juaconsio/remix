@@ -5,13 +5,14 @@ import Lobby from './pages/Lobby';
 import Game from './pages/Game';
 import Rosco from './pages/Rosco';
 import Results from './pages/Results';
-import YtTest from './pages/YtTest';
-
-const Playground = lazy(() => import('./pages/Playground'));
 import { useThemeStore } from './store/themeStore';
 import { useYtPlayingStore } from './store/ytPlayingStore';
 import { SettingsPanel } from './game/components/SettingsPanel';
 import { ConnectionBanner } from './game/components/ConnectionBanner';
+
+const DevOnly = () => null;
+const Playground = import.meta.env.DEV ? lazy(() => import('./pages/Playground')) : DevOnly;
+const YtTest = import.meta.env.DEV ? lazy(() => import('./pages/YtTest')) : DevOnly;
 
 const MEDIA_ACTIONS: MediaSessionAction[] = [
   'play', 'pause', 'stop', 'seekbackward', 'seekforward', 'previoustrack', 'nexttrack',
@@ -72,13 +73,19 @@ export default function App() {
         <Route path="/game/:code" element={<Game />} />
         <Route path="/rosco/:code" element={<Rosco />} />
         <Route path="/results/:code" element={<Results />} />
-        <Route path="/yt-test" element={<YtTest />} />
         {import.meta.env.DEV && (
-          <Route path="/playground" element={
-            <Suspense fallback={null}>
-              <Playground />
-            </Suspense>
-          } />
+          <>
+            <Route path="/playground" element={
+              <Suspense fallback={null}>
+                <Playground />
+              </Suspense>
+            } />
+            <Route path="/yt-test" element={
+              <Suspense fallback={null}>
+                <YtTest />
+              </Suspense>
+            } />
+          </>
         )}
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
