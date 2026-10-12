@@ -62,10 +62,11 @@ describe('startGame en clásico', () => {
 
   it('la primera carta ya exige decidir antes o después', () => {
     const room = classicRoom();
-    const [startingCard] = room.players[0].timeline;
-    const later = room.deck.find((s) => s.year > startingCard.year);
-    if (!later) throw new Error('el pack base debería tener una canción posterior');
-    room.deck = [later];
+    const baseByYear = songs.filter((s) => s.packId === 'base').sort((a, b) => a.year - b.year);
+    const earliest = baseByYear[0];
+    const latest = baseByYear[baseByYear.length - 1];
+    room.players[0].timeline = [earliest];
+    room.deck = [latest];
 
     rm.flipCard(room.code);
     rm.selectPosition(room.code, 0);
