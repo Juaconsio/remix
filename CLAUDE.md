@@ -66,6 +66,10 @@ player or the host emits `game:next`: the result is when the table reacts.
 `game:skip` discards the current card. A correct placement scores 1; the game ends when a
 player reaches 7 or the deck runs out.
 
+Drawing and listening are one tap: the client emits `game:flip` and starts `room.deck[0]` in
+the same handler, so playback stays inside the user gesture. Hiding the deck from clients
+would break this; the server would have to send the next card's track first.
+
 With `syncAudio` on, `game:audio:started` from the active player makes the server emit
 `game:audio:play` to everyone else.
 

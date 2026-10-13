@@ -27,6 +27,7 @@ export default function Game() {
     ytContainerRef,
     needsAudioUnlock,
     unlockAudio,
+    playSong,
     syncFailed,
     retrySync,
   } = useGameAudio(room, { card: room?.currentCard ?? null, canPlay: isActivePlayer });
@@ -60,6 +61,12 @@ export default function Game() {
 
   const isHost      = room.hostId === myPlayerId;
   const isLastTurn  = room.deck.length === 0 || room.players.some((p) => p.score >= WIN_SCORE);
+
+  const drawAndPlay = () => {
+    const nextCard = room.deck[0];
+    flipCard();
+    if (nextCard) playSong(nextCard);
+  };
 
   const playerProps = {
     isLoading:    activePlayer.isLoading,
@@ -179,7 +186,7 @@ export default function Game() {
         {/* CTA — setup */}
         {room.status === 'setup' && isActivePlayer && (
           <div className="px-5 pb-8 text-center">
-            <button onClick={flipCard} className="btn-game">
+            <button onClick={drawAndPlay} className="btn-game">
               <span>sacar carta.</span>
               <span>→</span>
             </button>

@@ -16,6 +16,7 @@ export interface UseGameAudioReturn {
   ytContainerRef: React.RefObject<HTMLDivElement | null>;
   needsAudioUnlock: boolean;
   unlockAudio: () => void;
+  playSong: (song: Song) => void;
   syncFailed: boolean;
   retrySync: () => void;
 }
@@ -53,15 +54,14 @@ export function useGameAudio(
     setLastSync(null);
   }, [card]);
 
-  // Stop de audio al pasar a validating
+  const stopYouTube = ytPlayer.stop;
   useEffect(() => {
+    const stopAll = () => { stop(); stopYouTube(); };
+    if (room?.status === 'setup') { stopAll(); return; }
     if (room?.status !== 'validating') return;
-    const timer = setTimeout(() => {
-      stop();
-      ytPlayer.stop();
-    }, 2500);
+    const timer = setTimeout(stopAll, 2500);
     return () => clearTimeout(timer);
-  }, [room?.status, stop, ytPlayer]);
+  }, [room?.status, stop, stopYouTube]);
 
   const songPackId = room?.config.mode === 'rosco' ? room.config.roscoPackId : room?.config.packId;
   useEffect(() => {
@@ -117,26 +117,29 @@ export function useGameAudio(
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [ytPlayer.errorCode]);
 
-  const handlePlay = useCallback(() => {
-    if (!card || !canPlay) return;
+  const playSong = useCallback((song: Song) => {
     setProviderError(null);
 
     if (provider === 'youtube') {
-      const videoId = ytMapRef.current[card.id] ?? card.providerIds?.youtube;
+      const videoId = ytMapRef.current[song.id] ?? song.providerIds?.youtube;
       if (!videoId) {
         setProviderError('Esta canción no tiene vídeo de YouTube configurado');
         return;
       }
-      ytPlayer.play(videoId, card.hookStart, card.hookDuration);
+      ytPlayer.play(videoId, song.hookStart, song.hookDuration);
     } else {
       const trackId = provider === 'spotify'
-        ? (card.providerIds?.spotify ?? String(card.deezerId))
-        : String(card.deezerId);
-      play(trackId, provider, card.hookStart, card.hookDuration);
+        ? (song.providerIds?.spotify ?? String(song.deezerId))
+        : String(song.deezerId);
+      play(trackId, provider, song.hookStart, song.hookDuration);
     }
 
     if (room?.config.syncAudio) notifyAudioStarted();
-  }, [room, card, canPlay, provider, ytPlayer, play, notifyAudioStarted]);
+  }, [room?.config.syncAudio, provider, ytPlayer, play, notifyAudioStarted]);
+
+  const handlePlay = useCallback(() => {
+    if (card && canPlay) playSong(card);
+  }, [card, canPlay, playSong]);
 
   const currentCardVideoId = card
     ? (ytMapRef.current[card.id] ?? card.providerIds?.youtube)
@@ -171,6 +174,7 @@ export function useGameAudio(
     ytContainerRef: ytPlayer.containerRef,
     needsAudioUnlock: !!room?.config.syncAudio && !audioUnlocked,
     unlockAudio,
+    playSong,
     syncFailed: !canPlay && !!lastSync && provider === 'youtube' && (ytPlayer.isBlocked || !!ytPlayer.error),
     retrySync,
   };
