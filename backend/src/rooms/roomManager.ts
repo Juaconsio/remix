@@ -1,4 +1,5 @@
-import type { Room, RoomConfig } from './types.js';
+import type { Room, RoomConfig, RoomPlayer } from './types.js';
+import type { Song } from '../types.js';
 import { allSongs as songs } from '../songs.js';
 import { getRoscoPack, buildCells, SAMPLE_PACK_ID } from './roscoPacks.js';
 import * as rosco from './rosco.js';
@@ -47,7 +48,7 @@ export function createRoom(hostId: string, hostName: string): Room {
   const room: Room = {
     code,
     hostId,
-    players: [{ id: hostId, name: hostName, timeline: [], score: 0, connected: true }],
+    players: [{ id: hostId, name: hostName, timeline: [], score: 0, connected: true, startingOptions: [] }],
     config: {
       packId: 'base',
       provider: 'youtube',
@@ -63,7 +64,7 @@ export function createRoom(hostId: string, hostName: string): Room {
     selectedPosition: null,
     validationResult: null,
     rosco: null,
-    audioCheckReadyIds: null,
+    pregameReadyIds: null,
   };
   rooms.set(code, room);
   saveRooms();
@@ -76,7 +77,7 @@ export function joinRoom(code: string, playerId: string, playerName: string): Ro
   if (room.status !== 'lobby') throw new Error('La partida ya ha comenzado');
   if (room.players.length >= 8) throw new Error('La sala está llena');
   if (room.players.find((p) => p.id === playerId)) return room; // reconexión
-  room.players.push({ id: playerId, name: playerName, timeline: [], score: 0, connected: true });
+  room.players.push({ id: playerId, name: playerName, timeline: [], score: 0, connected: true, startingOptions: [] });
   saveRooms();
   return room;
 }
@@ -92,8 +93,8 @@ export function reconnectPlayer(code: string, playerName: string, newSocketId: s
   player.id = newSocketId;
   player.connected = true;
   if (room.hostId === oldId) room.hostId = newSocketId;
-  if (room.audioCheckReadyIds) {
-    room.audioCheckReadyIds = room.audioCheckReadyIds.map((id) => (id === oldId ? newSocketId : id));
+  if (room.pregameReadyIds) {
+    room.pregameReadyIds = room.pregameReadyIds.map((id) => (id === oldId ? newSocketId : id));
   }
   saveRooms();
   return room;
@@ -143,7 +144,7 @@ export function removePlayer(playerId: string): Room | undefined {
       if (nextHost) room.hostId = nextHost.id;
     }
 
-    endAudioCheckIfEveryoneReady(room);
+    endPregameIfEveryoneReady(room);
 
     // Si el que cae es el jugador activo y está reteniendo el turno, avanzamos.
     // En 'validating' el turno lo avanza el host con game:next (index.ts), que
@@ -205,33 +206,55 @@ function shuffle<T>(arr: T[]): T[] {
   return a;
 }
 
-function endAudioCheckIfEveryoneReady(room: Room) {
-  const readyIds = room.audioCheckReadyIds;
+const STARTING_OPTIONS = 3;
+
+function takeStartingCard(room: Room, player: RoomPlayer, chosen: Song) {
+  const rest = player.startingOptions.filter((s) => s.id !== chosen.id);
+  player.timeline = [chosen];
+  player.startingOptions = [];
+  room.deck = shuffle([...room.deck, ...rest]);
+}
+
+function endPregame(room: Room) {
+  room.players.forEach((p) => {
+    if (p.startingOptions.length > 0) {
+      takeStartingCard(room, p, p.startingOptions[Math.floor(Math.random() * p.startingOptions.length)]);
+    }
+  });
+  room.pregameReadyIds = null;
+}
+
+function endPregameIfEveryoneReady(room: Room) {
+  const readyIds = room.pregameReadyIds;
   if (!readyIds) return;
-  if (room.players.every((p) => !p.connected || readyIds.includes(p.id))) {
-    room.audioCheckReadyIds = null;
-  }
+  if (room.players.every((p) => !p.connected || readyIds.includes(p.id))) endPregame(room);
 }
 
-function assertNotWaitingForAudio(room: Room) {
-  if (room.audioCheckReadyIds) throw new Error('Faltan jugadores por activar el audio');
+function assertPregameOver(room: Room) {
+  if (room.pregameReadyIds) throw new Error('La partida todavía no empieza');
 }
 
-export function confirmAudio(code: string, playerId: string): Room {
+export function confirmPregame(code: string, playerId: string, songId?: string): Room {
   const room = rooms.get(code);
-  if (!room) throw new Error('Sala no encontrada');
-  if (room.audioCheckReadyIds && !room.audioCheckReadyIds.includes(playerId)) {
-    room.audioCheckReadyIds.push(playerId);
-    endAudioCheckIfEveryoneReady(room);
-    saveRooms();
+  if (!room?.pregameReadyIds) throw new Error('No hay pregame en curso');
+  const player = room.players.find((p) => p.id === playerId);
+  if (!player || room.pregameReadyIds.includes(playerId)) return room;
+
+  if (player.startingOptions.length > 0) {
+    const chosen = player.startingOptions.find((s) => s.id === songId);
+    if (!chosen) throw new Error('Esa canción no está entre tus opciones');
+    takeStartingCard(room, player, chosen);
   }
+  room.pregameReadyIds.push(playerId);
+  endPregameIfEveryoneReady(room);
+  saveRooms();
   return room;
 }
 
-export function skipAudioCheck(code: string): Room {
+export function skipPregame(code: string): Room {
   const room = rooms.get(code);
   if (!room) throw new Error('Sala no encontrada');
-  room.audioCheckReadyIds = null;
+  endPregame(room);
   saveRooms();
   return room;
 }
@@ -239,8 +262,9 @@ export function skipAudioCheck(code: string): Room {
 export function startGame(code: string): Room {
   const room = rooms.get(code);
   if (!room) throw new Error('Sala no encontrada');
-  room.audioCheckReadyIds = room.config.syncAudio ? [] : null;
-  room.players.forEach((p) => { p.timeline = []; p.score = 0; });
+  const isClassic = room.config.mode === 'classic';
+  room.pregameReadyIds = isClassic || room.config.syncAudio ? [] : null;
+  room.players.forEach((p) => { p.timeline = []; p.score = 0; p.startingOptions = []; });
   room.currentPlayerIndex = 0;
   room.currentCard = null;
   room.selectedPosition = null;
@@ -263,10 +287,7 @@ export function startGame(code: string): Room {
   }
 
   const deck = shuffle(songs.filter((s) => s.packId === room.config.packId));
-  room.players.forEach((p) => {
-    const startingCard = deck.shift();
-    p.timeline = startingCard ? [startingCard] : [];
-  });
+  room.players.forEach((p) => { p.startingOptions = deck.splice(0, STARTING_OPTIONS); });
   room.deck = deck;
   room.rosco = null;
   room.status = 'setup';
@@ -285,7 +306,7 @@ function isChronologicallyCorrect(timeline: Room['players'][0]['timeline'], card
 export function flipCard(code: string): Room {
   const room = rooms.get(code);
   if (!room || room.deck.length === 0) throw new Error('No hay cartas');
-  assertNotWaitingForAudio(room);
+  assertPregameOver(room);
   const [card, ...rest] = room.deck;
   room.currentCard = card;
   room.deck = rest;
@@ -354,7 +375,7 @@ export function nextTurn(code: string): Room {
 function applyRosco(code: string, action: (room: Room) => boolean): Room {
   const room = rooms.get(code);
   if (!room || !room.rosco) throw new Error('Sala sin partida de rosco');
-  assertNotWaitingForAudio(room);
+  assertPregameOver(room);
   if (!action(room)) throw new Error('Jugada de rosco inválida');
   saveRooms();
   return room;

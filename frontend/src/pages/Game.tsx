@@ -6,7 +6,7 @@ import { PlayerHeader } from '../game/components/PlayerHeader';
 import { CardSlot } from '../game/components/CardSlot';
 import { Timeline } from '../game/components/Timeline';
 import { RevealOverlay } from '../game/components/RevealOverlay';
-import { AudioCheckOverlay } from '../game/components/AudioCheckOverlay';
+import { PregameOverlay } from '../game/components/PregameOverlay';
 import { getSongSignal, DEFAULT_SIGNAL } from '../utils/songColor';
 
 const WIN_SCORE = 7; // espejo de WIN_SCORE en backend/src/rooms/roomManager.ts
@@ -14,7 +14,7 @@ const WIN_SCORE = 7; // espejo de WIN_SCORE en backend/src/rooms/roomManager.ts
 export default function Game() {
   const navigate = useNavigate();
   const {
-    room, myPlayerId, flipCard, selectPosition, placeCard, skipCard, nextTurn, confirmAudio, skipAudioCheck,
+    room, myPlayerId, flipCard, selectPosition, placeCard, skipCard, nextTurn, confirmPregame, skipPregame,
   } = useSocket();
   const isActivePlayer = room?.players[room.currentPlayerIndex]?.id === myPlayerId;
   const {
@@ -207,14 +207,14 @@ export default function Game() {
         onNext={nextTurn}
       />
 
-      <AudioCheckOverlay
+      <PregameOverlay
         players={room.players}
-        readyIds={room.audioCheckReadyIds ?? null}
+        readyIds={room.pregameReadyIds ?? null}
         myPlayerId={myPlayerId}
         isHost={isHost}
         needsUnlock={needsAudioUnlock}
-        onReady={() => { unlockAudio(); confirmAudio(); }}
-        onSkip={skipAudioCheck}
+        onReady={(songId) => { unlockAudio(); confirmPregame(songId); }}
+        onSkip={skipPregame}
       />
 
       {/* YouTube iframe — always off-screen, never display:none */}

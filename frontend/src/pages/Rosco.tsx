@@ -6,7 +6,7 @@ import { AudioPlayer } from '../game/components/AudioPlayer';
 import { YouTubePlayer } from '../game/components/YouTubePlayer';
 import { RoscoBoard } from '../game/components/RoscoBoard';
 import { RoscoControls } from '../game/components/RoscoControls';
-import { AudioCheckOverlay } from '../game/components/AudioCheckOverlay';
+import { PregameOverlay } from '../game/components/PregameOverlay';
 import { SettingsTrigger } from '../game/components/SettingsTrigger';
 import { boardFor, firstActiveIndex } from '../utils/rosco';
 import { cn } from '../utils/cn';
@@ -21,8 +21,8 @@ export default function Rosco() {
     roscoCorrect,
     roscoWrong,
     roscoPass,
-    confirmAudio,
-    skipAudioCheck,
+    confirmPregame,
+    skipPregame,
   } = useSocket();
 
   const isHost = !!room && room.hostId === myPlayerId;
@@ -141,14 +141,14 @@ export default function Rosco() {
         </div>
       )}
 
-      <AudioCheckOverlay
+      <PregameOverlay
         players={room.players}
-        readyIds={room.audioCheckReadyIds ?? null}
+        readyIds={room.pregameReadyIds ?? null}
         myPlayerId={myPlayerId}
         isHost={isHost}
         needsUnlock={needsAudioUnlock}
-        onReady={() => { unlockAudio(); confirmAudio(); }}
-        onSkip={skipAudioCheck}
+        onReady={() => { unlockAudio(); confirmPregame(); }}
+        onSkip={skipPregame}
       />
 
       {/* YouTube iframe — always off-screen, never display:none */}

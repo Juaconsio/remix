@@ -25,7 +25,7 @@ player se crea o carga de forma asíncrona después del toque. Por eso:
 
 - `useYouTubePlayer` crea un solo player al entrar a la partida y lo reutiliza con
   `loadVideoById`; nunca lo crea en el toque de play.
-- Con `syncAudio`, la partida arranca con el chequeo "¿listos?" (`AudioCheckOverlay`): ese
+- La partida arranca con el pregame "¿listos?" (`PregameOverlay`): ese
   toque llama a `unlock()`, que reproduce un video dentro del gesto y lo pausa al empezar.
   Quien recarga la página a mitad de partida vuelve a ver la pantalla, sin frenar al resto.
 - Si aun así el navegador bloquea (`onAutoplayBlocked`) o el video no arranca en 10 s, quien

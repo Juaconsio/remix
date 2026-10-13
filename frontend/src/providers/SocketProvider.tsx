@@ -133,12 +133,12 @@ export function SocketProvider({ children }: { children: ReactNode }) {
     socketRef.current?.emit('game:audio:started');
   }, []);
 
-  const confirmAudio = useCallback(() => {
-    socketRef.current?.emit('game:audio:ready');
+  const confirmPregame = useCallback((songId?: string) => {
+    socketRef.current?.emit('game:pregame:ready', { songId });
   }, []);
 
-  const skipAudioCheck = useCallback(() => {
-    socketRef.current?.emit('game:audio:skipCheck');
+  const skipPregame = useCallback(() => {
+    socketRef.current?.emit('game:pregame:skip');
   }, []);
 
   const onAudioPlay = useCallback((handler: ServerToClientEvents['game:audio:play']) => {
@@ -161,8 +161,8 @@ export function SocketProvider({ children }: { children: ReactNode }) {
     placeCard,
     nextTurn,
     notifyAudioStarted,
-    confirmAudio,
-    skipAudioCheck,
+    confirmPregame,
+    skipPregame,
     onAudioPlay,
     skipCard,
     roscoAward,

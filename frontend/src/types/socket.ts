@@ -6,6 +6,7 @@ export interface RoomPlayer {
   timeline: Song[];
   score: number;
   connected: boolean;
+  startingOptions: Song[];
 }
 
 export type GameMode = 'classic' | 'rosco';
@@ -59,7 +60,7 @@ export interface Room {
   selectedPosition: number | null;
   validationResult: boolean | null;
   rosco: RoscoState | null;
-  audioCheckReadyIds: string[] | null;
+  pregameReadyIds: string[] | null;
 }
 
 // Eventos cliente → servidor
@@ -74,8 +75,8 @@ export interface ClientToServerEvents {
   'game:place': () => void;
   'game:next': () => void;
   'game:audio:started': () => void;
-  'game:audio:ready': () => void;
-  'game:audio:skipCheck': () => void;
+  'game:pregame:ready': (payload: { songId?: string }) => void;
+  'game:pregame:skip': () => void;
   'game:skip': () => void;
   'rosco:award': (payload: { playerId: string; award: Award }) => void;
   'rosco:skip': () => void;

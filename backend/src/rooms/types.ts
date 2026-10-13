@@ -7,6 +7,7 @@ export interface RoomPlayer {
   timeline: Song[];
   score: number;
   connected: boolean;
+  startingOptions: Song[];
 }
 
 export type GameMode = 'classic' | 'rosco';
@@ -55,5 +56,5 @@ export interface Room {
   selectedPosition: number | null;
   validationResult: boolean | null;
   rosco: RoscoState | null;
-  audioCheckReadyIds: string[] | null;
+  pregameReadyIds: string[] | null;
 }

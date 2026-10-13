@@ -18,7 +18,7 @@ function startedRoom(playerCount: number): Room {
 }
 
 function classicRoom(playerCount = 2): Room {
-  return rm.skipAudioCheck(startedRoom(playerCount).code);
+  return rm.skipPregame(startedRoom(playerCount).code);
 }
 
 function activePlayer(room: Room) {
@@ -43,7 +43,9 @@ describe('createRoom', () => {
     const room = rm.createRoom('solo-host', 'ana');
     expect(room.status).toBe('lobby');
     expect(room.config).toMatchObject({ packId: 'base', provider: 'youtube', mode: 'classic', syncAudio: true });
-    expect(room.players).toEqual([{ id: 'solo-host', name: 'ana', timeline: [], score: 0, connected: true }]);
+    expect(room.players).toEqual([
+      { id: 'solo-host', name: 'ana', timeline: [], score: 0, connected: true, startingOptions: [] },
+    ]);
   });
 });
 
@@ -129,46 +131,91 @@ describe('skipCard', () => {
   });
 });
 
-describe('chequeo de audio', () => {
-  it('sin audio en todos los dispositivos la partida no espera a nadie', () => {
+describe('pregame', () => {
+  function choose(room: Room, playerIndex: number, optionIndex = 0) {
+    const player = room.players[playerIndex];
+    return rm.confirmPregame(room.code, player.id, player.startingOptions[optionIndex]?.id);
+  }
+
+  it('en rosco sin audio en todos los dispositivos la partida no espera a nadie', () => {
     const room = rm.createRoom(`host-${nextHost++}`, 'ana');
-    rm.updateConfig(room.code, { syncAudio: false });
-    expect(rm.startGame(room.code).audioCheckReadyIds).toBeNull();
+    rm.updateConfig(room.code, { syncAudio: false, mode: 'rosco' });
+    expect(rm.startGame(room.code).pregameReadyIds).toBeNull();
   });
 
-  it('no deja sacar carta hasta que todos activan el audio', () => {
+  it('en clásico siempre hay pregame, aun sin audio en todos los dispositivos', () => {
+    const room = rm.createRoom(`host-${nextHost++}`, 'ana');
+    rm.updateConfig(room.code, { syncAudio: false });
+    expect(rm.startGame(room.code).pregameReadyIds).toEqual([]);
+  });
+
+  it('ofrece 3 canciones a cada jugador y nada en la línea de tiempo', () => {
+    const room = startedRoom(3);
+    expect(room.players.map((p) => p.startingOptions.length)).toEqual([3, 3, 3]);
+    expect(room.players.map((p) => p.timeline)).toEqual([[], [], []]);
+  });
+
+  it('la canción elegida abre la línea de tiempo y las otras vuelven al mazo', () => {
     const room = startedRoom(2);
-    expect(room.audioCheckReadyIds).toEqual([]);
-    expect(() => rm.flipCard(room.code)).toThrow('activar el audio');
+    const [first] = room.players;
+    const [, chosen, ...rest] = first.startingOptions;
+    const deckBefore = room.deck.length;
 
-    rm.confirmAudio(room.code, room.players[0].id);
-    rm.confirmAudio(room.code, room.players[0].id);
-    expect(room.audioCheckReadyIds).toEqual([room.players[0].id]);
+    rm.confirmPregame(room.code, first.id, chosen.id);
 
-    rm.confirmAudio(room.code, room.players[1].id);
-    expect(room.audioCheckReadyIds).toBeNull();
+    expect(first.timeline).toEqual([chosen]);
+    expect(first.startingOptions).toEqual([]);
+    expect(first.score).toBe(0);
+    expect(room.deck).toHaveLength(deckBefore + 2);
+    expect(room.deck).toEqual(expect.arrayContaining(rest));
+  });
+
+  it('rechaza una canción que no está entre las opciones del jugador', () => {
+    const room = startedRoom(2);
+    const [first, second] = room.players;
+    expect(() => rm.confirmPregame(room.code, first.id, second.startingOptions[0].id)).toThrow('opciones');
+  });
+
+  it('no deja sacar carta hasta que todos eligen', () => {
+    const room = startedRoom(2);
+    expect(() => rm.flipCard(room.code)).toThrow('todavía no empieza');
+
+    choose(room, 0);
+    choose(room, 0);
+    expect(room.pregameReadyIds).toEqual([room.players[0].id]);
+
+    choose(room, 1);
+    expect(room.pregameReadyIds).toBeNull();
     expect(rm.flipCard(room.code).status).toBe('round_active');
   });
 
-  it('no espera a quien se desconecta', () => {
+  it('no espera a quien se desconecta y le asigna una de sus opciones', () => {
     const room = startedRoom(3);
-    rm.confirmAudio(room.code, room.players[0].id);
-    rm.confirmAudio(room.code, room.players[1].id);
-    rm.removePlayer(room.players[2].id);
-    expect(room.audioCheckReadyIds).toBeNull();
+    const gone = room.players[2];
+    const options = [...gone.startingOptions];
+    choose(room, 0);
+    choose(room, 1);
+    rm.removePlayer(gone.id);
+
+    expect(room.pregameReadyIds).toBeNull();
+    expect(gone.timeline).toHaveLength(1);
+    expect(options).toContainEqual(gone.timeline[0]);
   });
 
-  it('conserva la confirmación de quien reconecta', () => {
+  it('conserva la elección de quien reconecta', () => {
     const room = startedRoom(3);
-    const [, second] = room.players;
-    rm.confirmAudio(room.code, second.id);
+    const second = room.players[1];
+    choose(room, 1);
     rm.reconnectPlayer(room.code, second.name, 'socket-nuevo');
-    expect(room.audioCheckReadyIds).toEqual(['socket-nuevo']);
+    expect(room.pregameReadyIds).toEqual(['socket-nuevo']);
   });
 
-  it('el host puede empezar sin esperar', () => {
+  it('el host puede empezar sin esperar y quien no eligió recibe una de sus opciones', () => {
     const room = startedRoom(2);
-    expect(rm.skipAudioCheck(room.code).audioCheckReadyIds).toBeNull();
+    const skipped = rm.skipPregame(room.code);
+    expect(skipped.pregameReadyIds).toBeNull();
+    expect(skipped.players.map((p) => p.timeline.length)).toEqual([1, 1]);
+    expect(skipped.players.every((p) => p.startingOptions.length === 0)).toBe(true);
   });
 });
 

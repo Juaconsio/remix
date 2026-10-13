@@ -24,7 +24,9 @@ type SyncedHook = Parameters<ServerToClientEvents['game:audio:play']>[0];
 
 function anyYouTubeId(map: Record<string, string>, room: Room | null): string | undefined {
   return Object.values(map)[0]
-    ?? room?.players.flatMap((p) => p.timeline).find((s) => s.providerIds?.youtube)?.providerIds?.youtube;
+    ?? room?.players
+      .flatMap((p) => [...p.timeline, ...p.startingOptions])
+      .find((s) => s.providerIds?.youtube)?.providerIds?.youtube;
 }
 
 export interface UseGameAudioOptions {

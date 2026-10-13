@@ -55,7 +55,11 @@ routes to `/game/:code` or `/rosco/:code`.
 
 Status: `lobby` → `setup` → `round_active` → `validating` → (next turn or) `finished`.
 
-`game:start` deals every player one revealed starting card from the deck; it does not score.
+`game:start` deals every player 3 revealed `startingOptions` and opens the pregame (below).
+Each player picks one with `game:pregame:ready { songId }`: it starts their timeline without
+scoring and the other two go back into the deck. Whoever has not picked when the pregame
+ends gets one of their options at random.
+
 Each turn the active player emits `game:flip` (draws a card) → `game:select` (picks a
 timeline position) → `game:place` (confirms). The reveal stays on screen until the active
 player or the host emits `game:next`: the result is when the table reacts.
@@ -77,17 +81,19 @@ In `turnos`, a hit keeps the turn and a miss or *pasapalabra* passes it; passed 
 back on the next lap. Disconnected players are skipped and their board no longer blocks the
 end of the game.
 
+### Pregame
+
+`game:start` opens the pregame in classic always, and in rosco when `syncAudio` is on:
+`pregameReadyIds` collects whoever emits `game:pregame:ready`, and `game:flip`, `rosco:*`
+and `game:audio:started` are refused until every connected player is in it or the host emits
+`game:pregame:skip`. That tap is also the user gesture mobile browsers require before playing
+sound on a device that never touches the play button.
+
 ## Audio providers
 
 `deezer` and `spotify` play 30 s previews through `useAudio` (Howler.js) and
 `/api/preview/*`; `youtube` uses the IFrame API through `useYouTubePlayer`. The provider is
 part of the room config; `useProviderStore` persists the active one in localStorage.
-
-With `syncAudio` on, `game:start` opens an audio check in both modes: `audioCheckReadyIds`
-collects whoever emits `game:audio:ready`, and `game:flip`, `rosco:*` and
-`game:audio:started` are refused until every connected player is in it or the host emits
-`game:audio:skipCheck`. That tap is the user gesture mobile browsers require before playing
-sound on a device that never touches the play button.
 
 YouTube is the MVP provider until there are licenses. Its known limits — Data API quota,
 iOS autoplay, Terms of Service — live in [`docs/youtube.md`](docs/youtube.md); read it

@@ -42,7 +42,7 @@ function entries(...titles: string[]): RoscoEntry[] {
 }
 
 function player(id: string, name: string): RoomPlayer {
-  return { id, name, timeline: [], score: 0, connected: true };
+  return { id, name, timeline: [], score: 0, connected: true, startingOptions: [] };
 }
 
 function room(subMode: 'paralelo' | 'turnos', packEntries: RoscoEntry[], names = ['ana', 'beto']): Room {
@@ -69,7 +69,7 @@ function room(subMode: 'paralelo' | 'turnos', packEntries: RoscoEntry[], names =
       subMode,
       boards: subMode === 'paralelo' ? [buildCells(packEntries)] : players.map(() => buildCells(packEntries)),
     },
-    audioCheckReadyIds: null,
+    pregameReadyIds: null,
   };
 }
 

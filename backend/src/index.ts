@@ -179,21 +179,23 @@ io.on('connection', (socket) => {
     } catch {}
   });
 
-  socket.on('game:audio:ready', () => {
+  socket.on('game:pregame:ready', ({ songId }) => {
     const room = rm.getRoomByPlayer(socket.id);
-    if (!room?.audioCheckReadyIds) return;
-    broadcastRoom(rm.confirmAudio(room.code, socket.id), 'game:state');
+    if (!room?.pregameReadyIds) return;
+    try {
+      broadcastRoom(rm.confirmPregame(room.code, socket.id, songId), 'game:state');
+    } catch {}
   });
 
-  socket.on('game:audio:skipCheck', () => {
+  socket.on('game:pregame:skip', () => {
     const room = rm.getRoomByPlayer(socket.id);
-    if (!room?.audioCheckReadyIds || room.hostId !== socket.id) return;
-    broadcastRoom(rm.skipAudioCheck(room.code), 'game:state');
+    if (!room?.pregameReadyIds || room.hostId !== socket.id) return;
+    broadcastRoom(rm.skipPregame(room.code), 'game:state');
   });
 
   socket.on('game:audio:started', () => {
     const room = rm.getRoomByPlayer(socket.id);
-    if (!room?.config.syncAudio || room.audioCheckReadyIds) return;
+    if (!room?.config.syncAudio || room.pregameReadyIds) return;
 
     const presenterId = room.rosco
       ? room.hostId
