@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import type { Room } from '../types/socket';
+import type { Room, ServerToClientEvents } from '../types/socket';
 import type { ActivePlayerState, MusicProvider, Song } from '../types/game';
 import { useSocket } from './useSocket';
 import { useAudio } from './useAudio';
@@ -14,6 +14,17 @@ export interface UseGameAudioReturn {
   missingYouTubeVideo: boolean;
   thumbnailUrl: string | undefined;
   ytContainerRef: React.RefObject<HTMLDivElement | null>;
+  needsAudioUnlock: boolean;
+  unlockAudio: () => void;
+  syncFailed: boolean;
+  retrySync: () => void;
+}
+
+type SyncedHook = Parameters<ServerToClientEvents['game:audio:play']>[0];
+
+function anyYouTubeId(map: Record<string, string>, room: Room | null): string | undefined {
+  return Object.values(map)[0]
+    ?? room?.players.flatMap((p) => p.timeline).find((s) => s.providerIds?.youtube)?.providerIds?.youtube;
 }
 
 export interface UseGameAudioOptions {
@@ -32,9 +43,13 @@ export function useGameAudio(
   const provider = room?.config.provider ?? 'youtube';
   const [providerError, setProviderError] = useState<string | null>(null);
   const ytMapRef = useRef<Record<string, string>>({});
+  const [audioUnlocked, setAudioUnlocked] = useState(false);
+  const [lastSync, setLastSync] = useState<SyncedHook | null>(null);
 
-  // Limpiar error al cambiar carta
-  useEffect(() => { setProviderError(null); }, [card]);
+  useEffect(() => {
+    setProviderError(null);
+    setLastSync(null);
+  }, [card]);
 
   // Stop de audio al pasar a validating
   useEffect(() => {
@@ -57,19 +72,33 @@ export function useGameAudio(
       .catch((err) => console.warn('[YT playlist-map] error:', err));
   }, [provider, songPackId]);
 
-  // Audio sincronizado para jugadores no activos
+  const playSynced = useCallback(({ trackId, provider: p, hookStart, hookDuration }: SyncedHook) => {
+    if (p === 'youtube') {
+      const videoId = trackId || (card ? ytMapRef.current[card.id] : undefined);
+      if (videoId) ytPlayer.play(videoId, hookStart, hookDuration);
+    } else {
+      play(trackId, p, hookStart, hookDuration);
+    }
+  }, [card, ytPlayer, play]);
+
   useEffect(() => {
     if (!room?.config.syncAudio) return;
-    return onAudioPlay(({ trackId, provider: p, hookStart, hookDuration }) => {
+    return onAudioPlay((hook) => {
       if (canPlay) return;
-      if (p === 'youtube') {
-        const videoId = trackId || (card ? ytMapRef.current[card.id] : undefined);
-        if (videoId) ytPlayer.play(videoId, hookStart, hookDuration);
-      } else {
-        play(trackId, p, hookStart, hookDuration);
-      }
+      setLastSync(hook);
+      playSynced(hook);
     });
-  }, [room?.config.syncAudio, onAudioPlay, play, ytPlayer, canPlay, card]);
+  }, [room?.config.syncAudio, onAudioPlay, canPlay, playSynced]);
+
+  const retrySync = useCallback(() => {
+    if (lastSync) playSynced(lastSync);
+  }, [lastSync, playSynced]);
+
+  const unlockAudio = useCallback(() => {
+    const videoId = anyYouTubeId(ytMapRef.current, room);
+    if (provider === 'youtube' && videoId) ytPlayer.unlock(videoId);
+    setAudioUnlocked(true);
+  }, [provider, room, ytPlayer]);
 
   // Auto-skip cuando el video no permite embedding en mobile (150/101)
   useEffect(() => {
@@ -138,5 +167,9 @@ export function useGameAudio(
     missingYouTubeVideo,
     thumbnailUrl,
     ytContainerRef: ytPlayer.containerRef,
+    needsAudioUnlock: !!room?.config.syncAudio && !audioUnlocked,
+    unlockAudio,
+    syncFailed: !canPlay && !!lastSync && provider === 'youtube' && (ytPlayer.isBlocked || !!ytPlayer.error),
+    retrySync,
   };
 }

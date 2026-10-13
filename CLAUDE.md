@@ -83,6 +83,12 @@ end of the game.
 `/api/preview/*`; `youtube` uses the IFrame API through `useYouTubePlayer`. The provider is
 part of the room config; `useProviderStore` persists the active one in localStorage.
 
+With `syncAudio` on, `game:start` opens an audio check in both modes: `audioCheckReadyIds`
+collects whoever emits `game:audio:ready`, and `game:flip`, `rosco:*` and
+`game:audio:started` are refused until every connected player is in it or the host emits
+`game:audio:skipCheck`. That tap is the user gesture mobile browsers require before playing
+sound on a device that never touches the play button.
+
 YouTube is the MVP provider until there are licenses. Its known limits — Data API quota,
 iOS autoplay, Terms of Service — live in [`docs/youtube.md`](docs/youtube.md); read it
 before touching the YouTube provider or opening the game to more users.

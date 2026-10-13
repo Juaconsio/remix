@@ -59,6 +59,7 @@ export interface Room {
   selectedPosition: number | null;
   validationResult: boolean | null;
   rosco: RoscoState | null;
+  audioCheckReadyIds: string[] | null;
 }
 
 // Eventos cliente → servidor
@@ -73,6 +74,8 @@ export interface ClientToServerEvents {
   'game:place': () => void;
   'game:next': () => void;
   'game:audio:started': () => void;
+  'game:audio:ready': () => void;
+  'game:audio:skipCheck': () => void;
   'game:skip': () => void;
   'rosco:award': (payload: { playerId: string; award: Award }) => void;
   'rosco:skip': () => void;

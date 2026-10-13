@@ -55,4 +55,5 @@ export interface Room {
   selectedPosition: number | null;
   validationResult: boolean | null;
   rosco: RoscoState | null;
+  audioCheckReadyIds: string[] | null;
 }

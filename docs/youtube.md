@@ -20,9 +20,19 @@ aparecen al abrir el juego a más gente.
 
 ## Autoplay en iOS
 
-Safari en iOS no reproduce sin un gesto del usuario. `useYouTubePlayer` lo detecta
-(`onAutoplayBlocked`) y reintenta con `playVideo()` dentro del siguiente toque, así que en
-iPhone el jugador puede tener que tocar dos veces para escuchar la carta.
+Safari en iOS no reproduce con sonido sin un gesto del usuario, y el gesto se pierde si el
+player se crea o carga de forma asíncrona después del toque. Por eso:
+
+- `useYouTubePlayer` crea un solo player al entrar a la partida y lo reutiliza con
+  `loadVideoById`; nunca lo crea en el toque de play.
+- Con `syncAudio`, la partida arranca con el chequeo "¿listos?" (`AudioCheckOverlay`): ese
+  toque llama a `unlock()`, que reproduce un video dentro del gesto y lo pausa al empezar.
+  Quien recarga la página a mitad de partida vuelve a ver la pantalla, sin frenar al resto.
+- Si aun así el navegador bloquea (`onAutoplayBlocked`) o el video no arranca en 10 s, quien
+  no tiene el turno ve "¿no la escuchas? toca aquí", que reintenta dentro del toque.
+
+Pendiente de verificar en iPhone que el desbloqueo desde la página llegue al iframe de
+YouTube. Si no llega, el plan B es que el toque caiga sobre el propio iframe.
 
 ## Términos de YouTube
 

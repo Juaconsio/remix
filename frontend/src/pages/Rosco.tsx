@@ -6,6 +6,7 @@ import { AudioPlayer } from '../game/components/AudioPlayer';
 import { YouTubePlayer } from '../game/components/YouTubePlayer';
 import { RoscoBoard } from '../game/components/RoscoBoard';
 import { RoscoControls } from '../game/components/RoscoControls';
+import { AudioCheckOverlay } from '../game/components/AudioCheckOverlay';
 import { SettingsTrigger } from '../game/components/SettingsTrigger';
 import { boardFor, firstActiveIndex } from '../utils/rosco';
 import { cn } from '../utils/cn';
@@ -20,6 +21,8 @@ export default function Rosco() {
     roscoCorrect,
     roscoWrong,
     roscoPass,
+    confirmAudio,
+    skipAudioCheck,
   } = useSocket();
 
   const isHost = !!room && room.hostId === myPlayerId;
@@ -28,7 +31,9 @@ export default function Rosco() {
   const activeCell = board && activeIndex >= 0 ? board[activeIndex] : null;
   const letterKey = `${room?.currentPlayerIndex}-${activeCell?.letter}`;
 
-  const { provider, activePlayer, displayError, ytContainerRef } = useGameAudio(room, {
+  const {
+    provider, activePlayer, displayError, ytContainerRef, needsAudioUnlock, unlockAudio, syncFailed, retrySync,
+  } = useGameAudio(room, {
     card: activeCell?.song ?? null,
     canPlay: isHost,
   });
@@ -127,6 +132,24 @@ export default function Rosco() {
             : 'escucha y responde en voz alta.'}
         </p>
       )}
+
+      {!isHost && syncFailed && (
+        <div className="px-5 mt-4">
+          <button onClick={retrySync} className="btn-secondary">
+            ¿no la escuchas? toca aquí
+          </button>
+        </div>
+      )}
+
+      <AudioCheckOverlay
+        players={room.players}
+        readyIds={room.audioCheckReadyIds ?? null}
+        myPlayerId={myPlayerId}
+        isHost={isHost}
+        needsUnlock={needsAudioUnlock}
+        onReady={() => { unlockAudio(); confirmAudio(); }}
+        onSkip={skipAudioCheck}
+      />
 
       {/* YouTube iframe — always off-screen, never display:none */}
       <div

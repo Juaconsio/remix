@@ -23,6 +23,8 @@ export interface SocketContextValue {
   roscoWrong: () => void;
   roscoPass: () => void;
   notifyAudioStarted: () => void;
+  confirmAudio: () => void;
+  skipAudioCheck: () => void;
   onAudioPlay: (handler: ServerToClientEvents['game:audio:play']) => () => void;
 }
 

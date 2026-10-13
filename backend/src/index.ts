@@ -179,9 +179,21 @@ io.on('connection', (socket) => {
     } catch {}
   });
 
+  socket.on('game:audio:ready', () => {
+    const room = rm.getRoomByPlayer(socket.id);
+    if (!room?.audioCheckReadyIds) return;
+    broadcastRoom(rm.confirmAudio(room.code, socket.id), 'game:state');
+  });
+
+  socket.on('game:audio:skipCheck', () => {
+    const room = rm.getRoomByPlayer(socket.id);
+    if (!room?.audioCheckReadyIds || room.hostId !== socket.id) return;
+    broadcastRoom(rm.skipAudioCheck(room.code), 'game:state');
+  });
+
   socket.on('game:audio:started', () => {
     const room = rm.getRoomByPlayer(socket.id);
-    if (!room?.config.syncAudio) return;
+    if (!room?.config.syncAudio || room.audioCheckReadyIds) return;
 
     const presenterId = room.rosco
       ? room.hostId

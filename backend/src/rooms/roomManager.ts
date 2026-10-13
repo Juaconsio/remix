@@ -63,6 +63,7 @@ export function createRoom(hostId: string, hostName: string): Room {
     selectedPosition: null,
     validationResult: null,
     rosco: null,
+    audioCheckReadyIds: null,
   };
   rooms.set(code, room);
   saveRooms();
@@ -91,6 +92,9 @@ export function reconnectPlayer(code: string, playerName: string, newSocketId: s
   player.id = newSocketId;
   player.connected = true;
   if (room.hostId === oldId) room.hostId = newSocketId;
+  if (room.audioCheckReadyIds) {
+    room.audioCheckReadyIds = room.audioCheckReadyIds.map((id) => (id === oldId ? newSocketId : id));
+  }
   saveRooms();
   return room;
 }
@@ -138,6 +142,8 @@ export function removePlayer(playerId: string): Room | undefined {
       const nextHost = room.players.find((p) => p.connected);
       if (nextHost) room.hostId = nextHost.id;
     }
+
+    endAudioCheckIfEveryoneReady(room);
 
     // Si el que cae es el jugador activo y está reteniendo el turno, avanzamos.
     // En 'validating' el turno lo avanza el host con game:next (index.ts), que
@@ -199,9 +205,41 @@ function shuffle<T>(arr: T[]): T[] {
   return a;
 }
 
+function endAudioCheckIfEveryoneReady(room: Room) {
+  const readyIds = room.audioCheckReadyIds;
+  if (!readyIds) return;
+  if (room.players.every((p) => !p.connected || readyIds.includes(p.id))) {
+    room.audioCheckReadyIds = null;
+  }
+}
+
+function assertNotWaitingForAudio(room: Room) {
+  if (room.audioCheckReadyIds) throw new Error('Faltan jugadores por activar el audio');
+}
+
+export function confirmAudio(code: string, playerId: string): Room {
+  const room = rooms.get(code);
+  if (!room) throw new Error('Sala no encontrada');
+  if (room.audioCheckReadyIds && !room.audioCheckReadyIds.includes(playerId)) {
+    room.audioCheckReadyIds.push(playerId);
+    endAudioCheckIfEveryoneReady(room);
+    saveRooms();
+  }
+  return room;
+}
+
+export function skipAudioCheck(code: string): Room {
+  const room = rooms.get(code);
+  if (!room) throw new Error('Sala no encontrada');
+  room.audioCheckReadyIds = null;
+  saveRooms();
+  return room;
+}
+
 export function startGame(code: string): Room {
   const room = rooms.get(code);
   if (!room) throw new Error('Sala no encontrada');
+  room.audioCheckReadyIds = room.config.syncAudio ? [] : null;
   room.players.forEach((p) => { p.timeline = []; p.score = 0; });
   room.currentPlayerIndex = 0;
   room.currentCard = null;
@@ -247,6 +285,7 @@ function isChronologicallyCorrect(timeline: Room['players'][0]['timeline'], card
 export function flipCard(code: string): Room {
   const room = rooms.get(code);
   if (!room || room.deck.length === 0) throw new Error('No hay cartas');
+  assertNotWaitingForAudio(room);
   const [card, ...rest] = room.deck;
   room.currentCard = card;
   room.deck = rest;
@@ -315,6 +354,7 @@ export function nextTurn(code: string): Room {
 function applyRosco(code: string, action: (room: Room) => boolean): Room {
   const room = rooms.get(code);
   if (!room || !room.rosco) throw new Error('Sala sin partida de rosco');
+  assertNotWaitingForAudio(room);
   if (!action(room)) throw new Error('Jugada de rosco inválida');
   saveRooms();
   return room;

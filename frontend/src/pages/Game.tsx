@@ -6,13 +6,16 @@ import { PlayerHeader } from '../game/components/PlayerHeader';
 import { CardSlot } from '../game/components/CardSlot';
 import { Timeline } from '../game/components/Timeline';
 import { RevealOverlay } from '../game/components/RevealOverlay';
+import { AudioCheckOverlay } from '../game/components/AudioCheckOverlay';
 import { getSongSignal, DEFAULT_SIGNAL } from '../utils/songColor';
 
 const WIN_SCORE = 7; // espejo de WIN_SCORE en backend/src/rooms/roomManager.ts
 
 export default function Game() {
   const navigate = useNavigate();
-  const { room, myPlayerId, flipCard, selectPosition, placeCard, skipCard, nextTurn } = useSocket();
+  const {
+    room, myPlayerId, flipCard, selectPosition, placeCard, skipCard, nextTurn, confirmAudio, skipAudioCheck,
+  } = useSocket();
   const isActivePlayer = room?.players[room.currentPlayerIndex]?.id === myPlayerId;
   const {
     provider,
@@ -22,6 +25,10 @@ export default function Game() {
     missingYouTubeVideo,
     thumbnailUrl,
     ytContainerRef,
+    needsAudioUnlock,
+    unlockAudio,
+    syncFailed,
+    retrySync,
   } = useGameAudio(room, { card: room?.currentCard ?? null, canPlay: isActivePlayer });
 
   useEffect(() => {
@@ -161,6 +168,14 @@ export default function Game() {
           </div>
         )}
 
+        {room.status === 'round_active' && !isActivePlayer && syncFailed && (
+          <div className="px-5 pb-8 pt-2">
+            <button onClick={retrySync} className="btn-secondary btn-secondary-light dark:border-ink dark:text-ink">
+              ¿no la escuchas? toca aquí
+            </button>
+          </div>
+        )}
+
         {/* CTA — setup */}
         {room.status === 'setup' && isActivePlayer && (
           <div className="px-5 pb-8 text-center">
@@ -190,6 +205,16 @@ export default function Game() {
         isLastTurn={isLastTurn}
         waitingFor={currentPlayer.name}
         onNext={nextTurn}
+      />
+
+      <AudioCheckOverlay
+        players={room.players}
+        readyIds={room.audioCheckReadyIds ?? null}
+        myPlayerId={myPlayerId}
+        isHost={isHost}
+        needsUnlock={needsAudioUnlock}
+        onReady={() => { unlockAudio(); confirmAudio(); }}
+        onSkip={skipAudioCheck}
       />
 
       {/* YouTube iframe — always off-screen, never display:none */}

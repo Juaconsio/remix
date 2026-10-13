@@ -10,11 +10,15 @@ vi.mock('fs', () => ({
 
 let nextHost = 0;
 
-function classicRoom(playerCount = 2): Room {
+function startedRoom(playerCount: number): Room {
   const hostId = `host-${nextHost++}`;
   const room = rm.createRoom(hostId, 'ana');
   for (let i = 1; i < playerCount; i++) rm.joinRoom(room.code, `${hostId}-p${i}`, `jugador ${i}`);
   return rm.startGame(room.code);
+}
+
+function classicRoom(playerCount = 2): Room {
+  return rm.skipAudioCheck(startedRoom(playerCount).code);
 }
 
 function activePlayer(room: Room) {
@@ -122,6 +126,49 @@ describe('skipCard', () => {
     expect(skipped.currentCard).toBeNull();
     expect(skipped.currentPlayerIndex).toBe(0);
     expect(skipped.deck).toHaveLength(deckBefore - 1);
+  });
+});
+
+describe('chequeo de audio', () => {
+  it('sin audio en todos los dispositivos la partida no espera a nadie', () => {
+    const room = rm.createRoom(`host-${nextHost++}`, 'ana');
+    rm.updateConfig(room.code, { syncAudio: false });
+    expect(rm.startGame(room.code).audioCheckReadyIds).toBeNull();
+  });
+
+  it('no deja sacar carta hasta que todos activan el audio', () => {
+    const room = startedRoom(2);
+    expect(room.audioCheckReadyIds).toEqual([]);
+    expect(() => rm.flipCard(room.code)).toThrow('activar el audio');
+
+    rm.confirmAudio(room.code, room.players[0].id);
+    rm.confirmAudio(room.code, room.players[0].id);
+    expect(room.audioCheckReadyIds).toEqual([room.players[0].id]);
+
+    rm.confirmAudio(room.code, room.players[1].id);
+    expect(room.audioCheckReadyIds).toBeNull();
+    expect(rm.flipCard(room.code).status).toBe('round_active');
+  });
+
+  it('no espera a quien se desconecta', () => {
+    const room = startedRoom(3);
+    rm.confirmAudio(room.code, room.players[0].id);
+    rm.confirmAudio(room.code, room.players[1].id);
+    rm.removePlayer(room.players[2].id);
+    expect(room.audioCheckReadyIds).toBeNull();
+  });
+
+  it('conserva la confirmación de quien reconecta', () => {
+    const room = startedRoom(3);
+    const [, second] = room.players;
+    rm.confirmAudio(room.code, second.id);
+    rm.reconnectPlayer(room.code, second.name, 'socket-nuevo');
+    expect(room.audioCheckReadyIds).toEqual(['socket-nuevo']);
+  });
+
+  it('el host puede empezar sin esperar', () => {
+    const room = startedRoom(2);
+    expect(rm.skipAudioCheck(room.code).audioCheckReadyIds).toBeNull();
   });
 });
 
