@@ -49,6 +49,117 @@ describe('createRoom', () => {
   });
 });
 
+describe('joinRoom', () => {
+  it('suma al jugador conectado y sin cartas', () => {
+    const room = rm.createRoom(`host-${nextHost++}`, 'ana');
+    rm.joinRoom(room.code, 'p-bea', 'bea');
+    expect(room.players[1]).toEqual(
+      { id: 'p-bea', name: 'bea', timeline: [], score: 0, connected: true, startingOptions: [] },
+    );
+  });
+
+  it('no duplica a quien vuelve a entrar con el mismo id', () => {
+    const room = rm.createRoom(`host-${nextHost++}`, 'ana');
+    rm.joinRoom(room.code, 'p-bea', 'bea');
+    rm.joinRoom(room.code, 'p-bea', 'bea');
+    expect(room.players).toHaveLength(2);
+  });
+
+  it('rechaza un nombre que ya está en la sala, sin distinguir mayúsculas ni espacios', () => {
+    const room = rm.createRoom(`host-${nextHost++}`, 'ana');
+    expect(() => rm.joinRoom(room.code, 'otra-ana', ' Ana ')).toThrow('ese nombre');
+    expect(room.players).toHaveLength(1);
+  });
+
+  it('rechaza unirse con la partida empezada, a una sala llena o inexistente', () => {
+    const started = startedRoom(2);
+    expect(() => rm.joinRoom(started.code, 'tarde', 'tarde')).toThrow('ya ha comenzado');
+
+    const full = rm.createRoom(`host-${nextHost++}`, 'ana');
+    for (let i = 1; i < 8; i++) rm.joinRoom(full.code, `${full.hostId}-p${i}`, `jugador ${i}`);
+    expect(() => rm.joinRoom(full.code, 'noveno', 'noveno')).toThrow('llena');
+
+    expect(() => rm.joinRoom('ZZZZ-no', 'x', 'x')).toThrow('no encontrada');
+  });
+});
+
+describe('reconnectPlayer', () => {
+  it('reasigna el socket por nombre y conserva puntaje y línea de tiempo', () => {
+    const room = classicRoom(2);
+    playCorrectTurn(room.code);
+    const host = room.players[0];
+    const { score, timeline } = host;
+    rm.removePlayer(host.id);
+    expect(host.connected).toBe(false);
+
+    rm.reconnectPlayer(room.code, 'ana', 'socket-nuevo');
+    expect(host).toMatchObject({ id: 'socket-nuevo', connected: true, score, timeline });
+    expect(rm.getRoomByPlayer('socket-nuevo')).toBe(room);
+  });
+
+  it('el host que reconecta recupera el rol si nadie lo tomó', () => {
+    const room = rm.createRoom(`host-${nextHost++}`, 'ana');
+    rm.reconnectPlayer(room.code, 'ana', 'socket-nuevo');
+    expect(room.hostId).toBe('socket-nuevo');
+  });
+
+  it('falla con un nombre que no está en la sala', () => {
+    const room = classicRoom(2);
+    expect(() => rm.reconnectPlayer(room.code, 'nadie', 'x')).toThrow('Jugador no encontrado');
+  });
+});
+
+describe('removePlayer', () => {
+  it('en el lobby saca al jugador y pasa el host al siguiente', () => {
+    const room = rm.createRoom(`host-${nextHost++}`, 'ana');
+    rm.joinRoom(room.code, 'p-bea', 'bea');
+    rm.removePlayer(room.hostId);
+    expect(room.players.map((p) => p.name)).toEqual(['bea']);
+    expect(room.hostId).toBe('p-bea');
+  });
+
+  it('en partida lo marca desconectado y, si tenía el turno, lo pasa', () => {
+    const room = classicRoom(3);
+    rm.removePlayer(room.players[0].id);
+    expect(room.players).toHaveLength(3);
+    expect(room.players[0].connected).toBe(false);
+    expect(room.currentPlayerIndex).toBe(1);
+    expect(room.hostId).toBe(room.players[1].id);
+  });
+
+  it('borra la sala cuando no queda nadie conectado', () => {
+    const room = classicRoom(2);
+    rm.removePlayer(room.players[0].id);
+    expect(rm.removePlayer(room.players[1].id)).toBeUndefined();
+    expect(rm.getRoom(room.code)).toBeUndefined();
+  });
+});
+
+describe('flipCard y selectPosition', () => {
+  it('sacar carta toma la primera del mazo y abre la ronda', () => {
+    const room = classicRoom();
+    const [top, ...rest] = room.deck;
+    const flipped = rm.flipCard(room.code);
+    expect(flipped.currentCard).toEqual(top);
+    expect(flipped.deck).toEqual(rest);
+    expect(flipped.status).toBe('round_active');
+    expect(flipped.selectedPosition).toBeNull();
+  });
+
+  it('no deja sacar carta con el mazo vacío', () => {
+    const room = classicRoom();
+    room.deck = [];
+    expect(() => rm.flipCard(room.code)).toThrow('No hay cartas');
+  });
+
+  it('la posición se puede cambiar antes de confirmar', () => {
+    const room = classicRoom();
+    rm.flipCard(room.code);
+    rm.selectPosition(room.code, 0);
+    expect(rm.selectPosition(room.code, 1).selectedPosition).toBe(1);
+  });
+});
+
 describe('startGame en clásico', () => {
   it('reparte el pack elegido entre las cartas iniciales y el mazo', () => {
     const room = classicRoom();
@@ -137,9 +248,9 @@ describe('pregame', () => {
     return rm.confirmPregame(room.code, player.id, player.startingOptions[optionIndex]?.id);
   }
 
-  it('en rosco sin audio en todos los dispositivos la partida no espera a nadie', () => {
+  it('en rosco no hay pregame, aun con audio en todos los dispositivos', () => {
     const room = rm.createRoom(`host-${nextHost++}`, 'ana');
-    rm.updateConfig(room.code, { syncAudio: false, mode: 'rosco' });
+    rm.updateConfig(room.code, { syncAudio: true, mode: 'rosco' });
     expect(rm.startGame(room.code).pregameReadyIds).toBeNull();
   });
 

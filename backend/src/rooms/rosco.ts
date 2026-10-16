@@ -22,13 +22,6 @@ export function boardFor(room: Room, playerIndex: number): RoscoCell[] | null {
     : room.rosco.boards[playerIndex] ?? null;
 }
 
-export function activeCell(room: Room): RoscoCell | null {
-  const board = boardFor(room, room.currentPlayerIndex);
-  if (!board) return null;
-  const index = firstActiveIndex(board);
-  return index === -1 ? null : board[index];
-}
-
 function cellPoints(cell: RoscoCell): number {
   return (cell.guessedTitle ? 1 : 0) + (cell.guessedArtist ? 1 : 0);
 }

@@ -77,6 +77,11 @@ export function joinRoom(code: string, playerId: string, playerName: string): Ro
   if (room.status !== 'lobby') throw new Error('La partida ya ha comenzado');
   if (room.players.length >= 8) throw new Error('La sala está llena');
   if (room.players.find((p) => p.id === playerId)) return room; // reconexión
+  // reconnectPlayer busca por nombre: un nombre repetido tomaría el lugar del otro.
+  const taken = playerName.trim().toLowerCase();
+  if (room.players.some((p) => p.name.trim().toLowerCase() === taken)) {
+    throw new Error('Ya hay un jugador con ese nombre en la sala');
+  }
   room.players.push({ id: playerId, name: playerName, timeline: [], score: 0, connected: true, startingOptions: [] });
   saveRooms();
   return room;
@@ -262,8 +267,7 @@ export function skipPregame(code: string): Room {
 export function startGame(code: string): Room {
   const room = rooms.get(code);
   if (!room) throw new Error('Sala no encontrada');
-  const isClassic = room.config.mode === 'classic';
-  room.pregameReadyIds = isClassic || room.config.syncAudio ? [] : null;
+  room.pregameReadyIds = room.config.mode === 'classic' ? [] : null;
   room.players.forEach((p) => { p.timeline = []; p.score = 0; p.startingOptions = []; });
   room.currentPlayerIndex = 0;
   room.currentCard = null;
@@ -375,7 +379,6 @@ export function nextTurn(code: string): Room {
 function applyRosco(code: string, action: (room: Room) => boolean): Room {
   const room = rooms.get(code);
   if (!room || !room.rosco) throw new Error('Sala sin partida de rosco');
-  assertPregameOver(room);
   if (!action(room)) throw new Error('Jugada de rosco inválida');
   saveRooms();
   return room;
@@ -399,9 +402,4 @@ export function roscoWrong(code: string): Room {
 
 export function roscoPass(code: string): Room {
   return applyRosco(code, rosco.pasapalabra);
-}
-
-export function roscoActiveCell(code: string) {
-  const room = rooms.get(code);
-  return room ? rosco.activeCell(room) : null;
 }
