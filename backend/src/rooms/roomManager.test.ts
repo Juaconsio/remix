@@ -65,6 +65,12 @@ describe('joinRoom', () => {
     expect(room.players).toHaveLength(2);
   });
 
+  it('rechaza un nombre que ya está en la sala, sin distinguir mayúsculas ni espacios', () => {
+    const room = rm.createRoom(`host-${nextHost++}`, 'ana');
+    expect(() => rm.joinRoom(room.code, 'otra-ana', ' Ana ')).toThrow('ese nombre');
+    expect(room.players).toHaveLength(1);
+  });
+
   it('rechaza unirse con la partida empezada, a una sala llena o inexistente', () => {
     const started = startedRoom(2);
     expect(() => rm.joinRoom(started.code, 'tarde', 'tarde')).toThrow('ya ha comenzado');

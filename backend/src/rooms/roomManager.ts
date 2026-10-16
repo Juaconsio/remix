@@ -77,6 +77,11 @@ export function joinRoom(code: string, playerId: string, playerName: string): Ro
   if (room.status !== 'lobby') throw new Error('La partida ya ha comenzado');
   if (room.players.length >= 8) throw new Error('La sala está llena');
   if (room.players.find((p) => p.id === playerId)) return room; // reconexión
+  // reconnectPlayer busca por nombre: un nombre repetido tomaría el lugar del otro.
+  const taken = playerName.trim().toLowerCase();
+  if (room.players.some((p) => p.name.trim().toLowerCase() === taken)) {
+    throw new Error('Ya hay un jugador con ese nombre en la sala');
+  }
   room.players.push({ id: playerId, name: playerName, timeline: [], score: 0, connected: true, startingOptions: [] });
   saveRooms();
   return room;
