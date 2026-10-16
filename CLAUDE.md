@@ -43,6 +43,10 @@ Without Docker: `pnpm -C backend dev` (loads `backend/.env`), `pnpm -C frontend 
 - Without `YOUTUBE_API_KEY` the `/api/youtube/*` routes answer 500.
 - Tests are Vitest, `*.test.ts` next to the code: `rosco.test.ts` and `roomManager.test.ts`
   (classic mode, with `fs` mocked so it never writes `dev-rooms.json`).
+- The backend builds with `tsconfig.build.json`, which leaves the tests out: the Docker
+  stage installs only the backend's deps, without `vitest`. The image installs each package
+  from its own `backend/pnpm-lock.yaml` / `frontend/pnpm-lock.yaml`, so a dependency change
+  must also update that lockfile (`pnpm install --lockfile-only --ignore-workspace`).
 - In dev, rooms persist to `backend/dev-rooms.json` (survives hot reload). With
   `NODE_ENV=production` they live only in memory.
 
