@@ -80,6 +80,8 @@ one per player in `turnos`. The room stays in `round_active` until every board i
 
 The host both plays and judges: only they emit `rosco:*`, and only they receive the answers.
 `publicRoom.ts` sets `song` to `null` on every unresolved cell for everyone else.
+Audio plays only on the host's device: `syncAudio` does not apply, because relaying the
+track (or the pack's `/api/youtube/playlist-map`) would hand the answer to everyone else.
 
 In `turnos`, a hit keeps the turn and a miss or *pasapalabra* passes it; passed letters come
 back on the next lap. Disconnected players are skipped and their board no longer blocks the
@@ -87,11 +89,11 @@ end of the game.
 
 ### Pregame
 
-`game:start` opens the pregame in classic always, and in rosco when `syncAudio` is on:
-`pregameReadyIds` collects whoever emits `game:pregame:ready`, and `game:flip`, `rosco:*`
-and `game:audio:started` are refused until every connected player is in it or the host emits
-`game:pregame:skip`. That tap is also the user gesture mobile browsers require before playing
-sound on a device that never touches the play button.
+`game:start` opens the pregame in classic only: `pregameReadyIds` collects whoever emits
+`game:pregame:ready`, and `game:flip` and `game:audio:started` are refused until every
+connected player is in it or the host emits `game:pregame:skip`. That tap is also the user
+gesture mobile browsers require before playing sound on a device that never touches the play
+button.
 
 ## Audio providers
 

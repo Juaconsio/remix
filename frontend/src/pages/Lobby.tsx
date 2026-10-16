@@ -136,17 +136,20 @@ function HostSettings({
         onSelect={(provider) => updateConfig({ provider })}
       />
 
-      <section className="mb-8">
-        <SectionLabel>audio</SectionLabel>
-        <OptionButton
-          name="escuchar en todos los dispositivos"
-          description={config.syncAudio
-            ? 'todos escuchan cuando el jugador activo da play'
-            : 'solo el jugador activo escucha'}
-          isSelected={config.syncAudio}
-          onClick={() => updateConfig({ syncAudio: !config.syncAudio })}
-        />
-      </section>
+      {/* En el rosco solo suena el host: reenviar el track les daría la respuesta a los demás. */}
+      {config.mode === 'classic' && (
+        <section className="mb-8">
+          <SectionLabel>audio</SectionLabel>
+          <OptionButton
+            name="escuchar en todos los dispositivos"
+            description={config.syncAudio
+              ? 'todos escuchan cuando el jugador activo da play'
+              : 'solo el jugador activo escucha'}
+            isSelected={config.syncAudio}
+            onClick={() => updateConfig({ syncAudio: !config.syncAudio })}
+          />
+        </section>
+      )}
     </>
   );
 }

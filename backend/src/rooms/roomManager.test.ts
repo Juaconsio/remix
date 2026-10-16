@@ -137,9 +137,9 @@ describe('pregame', () => {
     return rm.confirmPregame(room.code, player.id, player.startingOptions[optionIndex]?.id);
   }
 
-  it('en rosco sin audio en todos los dispositivos la partida no espera a nadie', () => {
+  it('en rosco no hay pregame, aun con audio en todos los dispositivos', () => {
     const room = rm.createRoom(`host-${nextHost++}`, 'ana');
-    rm.updateConfig(room.code, { syncAudio: false, mode: 'rosco' });
+    rm.updateConfig(room.code, { syncAudio: true, mode: 'rosco' });
     expect(rm.startGame(room.code).pregameReadyIds).toBeNull();
   });
 

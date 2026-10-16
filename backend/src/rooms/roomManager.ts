@@ -262,8 +262,7 @@ export function skipPregame(code: string): Room {
 export function startGame(code: string): Room {
   const room = rooms.get(code);
   if (!room) throw new Error('Sala no encontrada');
-  const isClassic = room.config.mode === 'classic';
-  room.pregameReadyIds = isClassic || room.config.syncAudio ? [] : null;
+  room.pregameReadyIds = room.config.mode === 'classic' ? [] : null;
   room.players.forEach((p) => { p.timeline = []; p.score = 0; p.startingOptions = []; });
   room.currentPlayerIndex = 0;
   room.currentCard = null;
@@ -375,7 +374,6 @@ export function nextTurn(code: string): Room {
 function applyRosco(code: string, action: (room: Room) => boolean): Room {
   const room = rooms.get(code);
   if (!room || !room.rosco) throw new Error('Sala sin partida de rosco');
-  assertPregameOver(room);
   if (!action(room)) throw new Error('Jugada de rosco inválida');
   saveRooms();
   return room;
@@ -399,9 +397,4 @@ export function roscoWrong(code: string): Room {
 
 export function roscoPass(code: string): Room {
   return applyRosco(code, rosco.pasapalabra);
-}
-
-export function roscoActiveCell(code: string) {
-  const room = rooms.get(code);
-  return room ? rosco.activeCell(room) : null;
 }
