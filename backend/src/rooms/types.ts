@@ -6,8 +6,15 @@ export interface RoomPlayer {
   name: string;
   timeline: Song[];
   score: number;
+  tokens: number;
   connected: boolean;
   startingOptions: Song[];
+}
+
+export interface Steal {
+  playerId: string;
+  // null cuando el jugador pasó sin robar.
+  position: number | null;
 }
 
 export type GameMode = 'classic' | 'rosco';
@@ -42,7 +49,7 @@ export interface RoomConfig {
   roscoPackId: string;
 }
 
-export type RoomStatus = 'lobby' | 'setup' | 'round_active' | 'validating' | 'finished';
+export type RoomStatus = 'lobby' | 'setup' | 'round_active' | 'stealing' | 'validating' | 'finished';
 
 export interface Room {
   code: string;
@@ -55,6 +62,10 @@ export interface Room {
   currentCard: Song | null;
   selectedPosition: number | null;
   validationResult: boolean | null;
+  steals: Steal[];
+  stealDeadline: number | null;
+  stealWinnerId: string | null;
+  tokenAwarded: boolean;
   rosco: RoscoState | null;
   pregameReadyIds: string[] | null;
 }
