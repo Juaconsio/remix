@@ -32,7 +32,7 @@ export function PlayerHeader({ player, cardsLeft, signal }: PlayerHeaderProps) {
 
       <div className="flex items-center gap-2.5">
         <span className="font-mono-cut tracking-[0.12em]" style={{ fontSize: 11, opacity: 0.75 }}>
-          {player.score} pts
+          {player.score} pts · {player.tokens} {player.tokens === 1 ? 'ficha' : 'fichas'}
         </span>
         <SettingsTrigger color="var(--cut-ink)" />
       </div>

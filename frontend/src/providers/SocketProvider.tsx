@@ -105,8 +105,20 @@ export function SocketProvider({ children }: { children: ReactNode }) {
     socketRef.current?.emit('game:next');
   }, []);
 
-  const skipCard = useCallback(() => {
-    socketRef.current?.emit('game:skip');
+  const skipCard = useCallback((paid: boolean) => {
+    socketRef.current?.emit('game:skip', { paid });
+  }, []);
+
+  const stealCard = useCallback((position: number) => {
+    socketRef.current?.emit('game:steal', { position });
+  }, []);
+
+  const passSteal = useCallback(() => {
+    socketRef.current?.emit('game:steal:pass');
+  }, []);
+
+  const awardToken = useCallback(() => {
+    socketRef.current?.emit('game:token:award');
   }, []);
 
   const roscoAward = useCallback((playerId: string, award: Award) => {
@@ -165,6 +177,9 @@ export function SocketProvider({ children }: { children: ReactNode }) {
     skipPregame,
     onAudioPlay,
     skipCard,
+    stealCard,
+    passSteal,
+    awardToken,
     roscoAward,
     roscoSkip,
     roscoCorrect,

@@ -12,6 +12,8 @@ interface RevealOverlayProps {
   isLastTurn: boolean;
   waitingFor: string;
   onNext: () => void;
+  stealWinnerName: string | null;
+  tokenAward: { playerName: string; awarded: boolean; onAward: () => void } | null;
 }
 
 const SLIDE = { type: 'spring', damping: 28, stiffness: 220 } as const;
@@ -48,9 +50,13 @@ export function RevealOverlay({
   isLastTurn,
   waitingFor,
   onNext,
+  stealWinnerName,
+  tokenAward,
 }: RevealOverlayProps) {
   const prefersReduced = useReducedMotion() ?? false;
   const primary = signal?.primary ?? '#ff5722';
+  const somebodyScored = result === true || stealWinnerName !== null;
+  const resultLabel = result ? 'correcto.' : stealWinnerName ? `${stealWinnerName} la robó.` : 'incorrecto.';
 
   return (
     <AnimatePresence>
@@ -177,7 +183,7 @@ export function RevealOverlay({
           <AnimatePresence>
             {result !== null && (
               <motion.div
-                {...badgeEntrance(result, prefersReduced)}
+                {...badgeEntrance(somebodyScored, prefersReduced)}
                 style={{ marginTop: 28, transformOrigin: 'left center' }}
               >
                 <div
@@ -187,8 +193,8 @@ export function RevealOverlay({
                     gap: 12,
                     padding: '14px 22px',
                     borderRadius: 999,
-                    ...(result
-                      ? { background: '#2cd9b8', color: '#0e0e0e' }
+                    ...(somebodyScored
+                      ? { background: result ? '#2cd9b8' : primary, color: '#0e0e0e' }
                       : { background: 'transparent', border: '2.5px solid rgba(255,244,237,0.3)', color: '#fff4ed' }),
                   }}
                 >
@@ -201,9 +207,9 @@ export function RevealOverlay({
                       letterSpacing: -0.3,
                     }}
                   >
-                    {result ? 'correcto.' : 'incorrecto.'}
+                    {resultLabel}
                   </span>
-                  {result && (
+                  {somebodyScored && (
                     <span
                       style={{
                         fontFamily: "'Space Mono', monospace",
@@ -226,8 +232,19 @@ export function RevealOverlay({
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={prefersReduced ? { duration: 0 } : { duration: 0.3, delay: 1.1 }}
-            style={{ position: 'absolute', left: 20, right: 20, bottom: 32 }}
+            style={{ position: 'absolute', left: 20, right: 20, bottom: 32, display: 'flex', flexDirection: 'column', gap: 10 }}
           >
+            {tokenAward && (
+              tokenAward.awarded ? (
+                <p className="font-mono-cut text-center" style={{ fontSize: 11, color: 'rgba(255,244,237,0.6)' }}>
+                  ficha para {tokenAward.playerName} ✓
+                </p>
+              ) : (
+                <button onClick={tokenAward.onAward} className="btn-secondary btn-secondary-light">
+                  {tokenAward.playerName} la nombró · +1 ficha
+                </button>
+              )
+            )}
             {canAdvance ? (
               <button onClick={onNext} className="btn-game">
                 <span>{isLastTurn ? 'ver resultados.' : 'siguiente.'}</span>

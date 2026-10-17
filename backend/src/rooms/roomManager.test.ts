@@ -32,10 +32,28 @@ function correctPosition(room: Room): number {
   return after === -1 ? timeline.length : after;
 }
 
+function passEveryone(room: Room): Room {
+  room.players.forEach((p, i) => {
+    if (i !== room.currentPlayerIndex && room.status === 'stealing') rm.passSteal(room.code, p.id);
+  });
+  return room;
+}
+
 function playCorrectTurn(code: string): Room {
   const flipped = rm.flipCard(code);
   rm.selectPosition(code, correctPosition(flipped));
-  return rm.placeCard(code);
+  return passEveryone(rm.placeCard(code));
+}
+
+function wrongPlacement(playerCount: number) {
+  const room = classicRoom(playerCount);
+  const byYear = [...room.deck].sort((a, b) => a.year - b.year);
+  const [oldest, middle, newest] = [byYear[0], byYear[Math.floor(byYear.length / 2)], byYear[byYear.length - 1]];
+  room.players[0].timeline = [oldest, newest];
+  room.deck = [middle];
+  rm.flipCard(room.code);
+  rm.selectPosition(room.code, 0);
+  return { room: rm.placeCard(room.code), card: middle, correctSlot: 1, wrongSlot: 2 };
 }
 
 describe('createRoom', () => {
@@ -44,7 +62,7 @@ describe('createRoom', () => {
     expect(room.status).toBe('lobby');
     expect(room.config).toMatchObject({ packId: 'base', provider: 'youtube', mode: 'classic', syncAudio: true });
     expect(room.players).toEqual([
-      { id: 'solo-host', name: 'ana', timeline: [], score: 0, connected: true, startingOptions: [] },
+      { id: 'solo-host', name: 'ana', timeline: [], score: 0, tokens: 0, connected: true, startingOptions: [] },
     ]);
   });
 });
@@ -76,7 +94,7 @@ describe('startGame en clásico', () => {
 
     rm.flipCard(room.code);
     rm.selectPosition(room.code, 0);
-    expect(rm.placeCard(room.code).validationResult).toBe(false);
+    expect(passEveryone(rm.placeCard(room.code)).validationResult).toBe(false);
   });
 });
 
@@ -86,7 +104,7 @@ describe('placeCard', () => {
     const card = rm.flipCard(room.code).currentCard!;
     const before = activePlayer(room).timeline.length;
     rm.selectPosition(room.code, correctPosition(room));
-    const placed = rm.placeCard(room.code);
+    const placed = passEveryone(rm.placeCard(room.code));
 
     expect(placed.status).toBe('validating');
     expect(placed.validationResult).toBe(true);
@@ -104,7 +122,7 @@ describe('placeCard', () => {
 
     rm.flipCard(room.code);
     rm.selectPosition(room.code, 0);
-    const placed = rm.placeCard(room.code);
+    const placed = passEveryone(rm.placeCard(room.code));
 
     expect(placed.validationResult).toBe(false);
     expect(placed.players[0].score).toBe(0);
@@ -128,6 +146,128 @@ describe('skipCard', () => {
     expect(skipped.currentCard).toBeNull();
     expect(skipped.currentPlayerIndex).toBe(0);
     expect(skipped.deck).toHaveLength(deckBefore - 1);
+    expect(activePlayer(skipped).tokens).toBe(2);
+  });
+
+  it('saltar por decisión propia cuesta una ficha', () => {
+    const room = classicRoom();
+    rm.flipCard(room.code);
+    expect(activePlayer(rm.skipCard(room.code, true)).tokens).toBe(1);
+  });
+
+  it('sin fichas no se puede saltar por decisión propia', () => {
+    const room = classicRoom();
+    activePlayer(room).tokens = 0;
+    rm.flipCard(room.code);
+    expect(() => rm.skipCard(room.code, true)).toThrow('fichas');
+    expect(room.status).toBe('round_active');
+  });
+});
+
+describe('robo', () => {
+  it('cada jugador empieza la partida con 2 fichas', () => {
+    expect(classicRoom(3).players.map((p) => p.tokens)).toEqual([2, 2, 2]);
+  });
+
+  it('al confirmar abre la ventana de robo sin revelar el resultado', () => {
+    const { room } = wrongPlacement(2);
+    expect(room.status).toBe('stealing');
+    expect(room.validationResult).toBeNull();
+    expect(room.stealDeadline).not.toBeNull();
+  });
+
+  it('si nadie más tiene fichas revela de inmediato', () => {
+    const room = classicRoom(2);
+    room.players[1].tokens = 0;
+    rm.flipCard(room.code);
+    rm.selectPosition(room.code, 0);
+    expect(rm.placeCard(room.code).status).toBe('validating');
+  });
+
+  it('quien roba bien se lleva la carta ordenada en su línea y un punto', () => {
+    const { room, card, correctSlot } = wrongPlacement(2);
+    const thief = room.players[1];
+    rm.stealCard(room.code, thief.id, correctSlot);
+
+    expect(room.status).toBe('validating');
+    expect(room.validationResult).toBe(false);
+    expect(room.stealWinnerId).toBe(thief.id);
+    expect(thief.score).toBe(1);
+    expect(thief.tokens).toBe(1);
+    expect(thief.timeline).toContainEqual(card);
+    expect(thief.timeline.map((s) => s.year)).toEqual([...thief.timeline.map((s) => s.year)].sort((a, b) => a - b));
+    expect(room.players[0].timeline).not.toContainEqual(card);
+  });
+
+  it('si el jugador del turno acierta, quien robó pierde la ficha y no se lleva nada', () => {
+    const room = classicRoom(2);
+    const thief = room.players[1];
+    const flipped = rm.flipCard(room.code);
+    const right = correctPosition(flipped);
+    rm.selectPosition(room.code, right);
+    rm.placeCard(room.code);
+    rm.stealCard(room.code, thief.id, right === 0 ? 1 : 0);
+
+    expect(room.validationResult).toBe(true);
+    expect(room.stealWinnerId).toBeNull();
+    expect(thief.tokens).toBe(1);
+    expect(thief.score).toBe(0);
+  });
+
+  it('con varios robos acertados gana el primero que robó', () => {
+    const { room, correctSlot, wrongSlot } = wrongPlacement(3);
+    const [, first, second] = room.players;
+    rm.stealCard(room.code, second.id, wrongSlot);
+    rm.stealCard(room.code, first.id, correctSlot);
+    expect(room.stealWinnerId).toBe(first.id);
+  });
+
+  it('no deja robar el hueco del jugador del turno ni uno ya tomado', () => {
+    const { room, correctSlot } = wrongPlacement(3);
+    const [, first, second] = room.players;
+    expect(() => rm.stealCard(room.code, first.id, 0)).toThrow('no está libre');
+    rm.stealCard(room.code, first.id, correctSlot);
+    expect(() => rm.stealCard(room.code, second.id, correctSlot)).toThrow('no está libre');
+    expect(second.tokens).toBe(2);
+  });
+
+  it('el jugador del turno no puede robarse a sí mismo', () => {
+    const { room } = wrongPlacement(2);
+    expect(() => rm.stealCard(room.code, room.players[0].id, 1)).toThrow('No puedes robar');
+  });
+
+  it('al vencer el plazo revela aunque falten jugadores por decidir', () => {
+    const { room } = wrongPlacement(3);
+    expect(rm.closeSteal(room.code, room.stealDeadline! - 1)).toBeUndefined();
+    expect(room.status).toBe('stealing');
+    expect(rm.closeSteal(room.code, room.stealDeadline!)?.status).toBe('validating');
+  });
+
+  it('si se desconecta el último por decidir, revela', () => {
+    const { room } = wrongPlacement(3);
+    rm.passSteal(room.code, room.players[1].id);
+    rm.removePlayer(room.players[2].id);
+    expect(room.status).toBe('validating');
+  });
+});
+
+describe('awardToken', () => {
+  it('da una ficha al jugador del turno una sola vez por turno', () => {
+    const room = playCorrectTurn(classicRoom(2).code);
+    rm.awardToken(room.code);
+    expect(activePlayer(room).tokens).toBe(3);
+    expect(() => rm.awardToken(room.code)).toThrow();
+  });
+
+  it('no pasa de 5 fichas', () => {
+    const room = playCorrectTurn(classicRoom(2).code);
+    activePlayer(room).tokens = 5;
+    expect(activePlayer(rm.awardToken(room.code)).tokens).toBe(5);
+  });
+
+  it('solo se da después de revelar', () => {
+    const { room } = wrongPlacement(2);
+    expect(() => rm.awardToken(room.code)).toThrow();
   });
 });
 

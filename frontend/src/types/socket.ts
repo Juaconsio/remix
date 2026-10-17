@@ -5,8 +5,15 @@ export interface RoomPlayer {
   name: string;
   timeline: Song[];
   score: number;
+  tokens: number;
   connected: boolean;
   startingOptions: Song[];
+}
+
+export interface Steal {
+  playerId: string;
+  // null cuando el jugador pasó sin robar.
+  position: number | null;
 }
 
 export type GameMode = 'classic' | 'rosco';
@@ -46,7 +53,7 @@ export interface RoomConfig {
   roscoPackId: string;
 }
 
-export type RoomStatus = 'lobby' | 'setup' | 'round_active' | 'validating' | 'finished';
+export type RoomStatus = 'lobby' | 'setup' | 'round_active' | 'stealing' | 'validating' | 'finished';
 
 export interface Room {
   code: string;
@@ -59,6 +66,10 @@ export interface Room {
   currentCard: Song | null;
   selectedPosition: number | null;
   validationResult: boolean | null;
+  steals: Steal[];
+  stealDeadline: number | null;
+  stealWinnerId: string | null;
+  tokenAwarded: boolean;
   rosco: RoscoState | null;
   pregameReadyIds: string[] | null;
 }
@@ -77,7 +88,10 @@ export interface ClientToServerEvents {
   'game:audio:started': () => void;
   'game:pregame:ready': (payload: { songId?: string }) => void;
   'game:pregame:skip': () => void;
-  'game:skip': () => void;
+  'game:skip': (payload: { paid: boolean }) => void;
+  'game:steal': (payload: { position: number }) => void;
+  'game:steal:pass': () => void;
+  'game:token:award': () => void;
   'rosco:award': (payload: { playerId: string; award: Award }) => void;
   'rosco:skip': () => void;
   'rosco:correct': (payload: { award: Award }) => void;

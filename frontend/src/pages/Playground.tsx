@@ -35,7 +35,7 @@ const TIMELINE_SONGS: Song[] = [
 ];
 
 const MOCK_PLAYER: RoomPlayer = {
-  id: 'p1', name: 'jugador', timeline: [], score: 3, connected: true, startingOptions: [],
+  id: 'p1', name: 'jugador', timeline: [], score: 3, tokens: 2, connected: true, startingOptions: [],
 };
 
 // ── Helpers ──────────────────────────────────────────────────────────
