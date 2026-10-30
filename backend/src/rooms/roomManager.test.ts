@@ -72,7 +72,7 @@ describe('joinRoom', () => {
     const room = rm.createRoom(`host-${nextHost++}`, 'ana');
     rm.joinRoom(room.code, 'p-bea', 'bea');
     expect(room.players[1]).toEqual(
-      { id: 'p-bea', name: 'bea', timeline: [], score: 0, connected: true, startingOptions: [] },
+      { id: 'p-bea', name: 'bea', timeline: [], score: 0, tokens: 0, connected: true, startingOptions: [] },
     );
   });
 

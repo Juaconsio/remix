@@ -118,6 +118,12 @@ function wrongPosition(room: Room): number | null {
   return null;
 }
 
+async function passSteal(active: Player, others: Player[]): Promise<Room> {
+  const revealed = active.next((r) => r.status === 'validating');
+  for (const other of others) other.socket.emit('game:steal:pass');
+  return revealed;
+}
+
 describe('partida clásica completa con 3 jugadores', () => {
   it('pregame, turnos, aciertos, errores, descarte y resultados iguales para todos', async () => {
     const players = await openTable(['ana', 'bea', 'caro'], { mode: 'classic', provider: 'deezer', syncAudio: true });
@@ -155,8 +161,11 @@ describe('partida clásica completa con 3 jugadores', () => {
       const miss = turn % 3 === 2 ? wrongPosition(flipped) : null;
       const position = miss ?? correctPosition(flipped);
       await active.act('game:select', { position }, (r) => r.selectedPosition === position);
-      const placed = await active.act('game:place', undefined, (r) => r.status === 'validating');
-      expect(placed.validationResult).toBe(miss === null);
+      const placed = await active.act('game:place', undefined, (r) => r.status === 'stealing' || r.status === 'validating');
+      const revealed = placed.status === 'validating'
+        ? placed
+        : await passSteal(active, players.filter((p) => p !== active));
+      expect(revealed.validationResult).toBe(miss === null);
       if (miss === null) expectedScores.set(active.id, expectedScores.get(active.id)! + 1);
 
       // El resultado espera a game:next; el host puede avanzar aunque no sea su turno.
