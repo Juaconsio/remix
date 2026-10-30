@@ -44,6 +44,8 @@ export function useGameAudio(
   const ytPlayer = useYouTubePlayer();
 
   const provider = room?.config.provider ?? 'youtube';
+  // El servidor no reenvía el audio del rosco: el track es la respuesta.
+  const syncAudio = !!room?.config.syncAudio && room.config.mode !== 'rosco';
   const [providerError, setProviderError] = useState<string | null>(null);
   const ytMapRef = useRef<Record<string, string>>({});
   const [audioUnlocked, setAudioUnlocked] = useState(false);
@@ -64,15 +66,17 @@ export function useGameAudio(
   }, [room?.status, stop, stopYouTube]);
 
   const songPackId = room?.config.mode === 'rosco' ? room.config.roscoPackId : room?.config.packId;
+  // En el rosco el mapa lista las respuestas del pack: solo lo pide quien reproduce.
+  const needsYtMap = provider === 'youtube' && !!songPackId && (room?.config.mode !== 'rosco' || canPlay);
   useEffect(() => {
-    if (provider !== 'youtube' || !songPackId) return;
+    if (!needsYtMap) return;
     fetch(`/api/youtube/playlist-map?packId=${encodeURIComponent(songPackId)}`)
       .then((r) => r.json())
       .then((data: { map?: Record<string, string> }) => {
         if (data.map) ytMapRef.current = data.map;
       })
       .catch((err) => console.warn('[YT playlist-map] error:', err));
-  }, [provider, songPackId]);
+  }, [needsYtMap, songPackId]);
 
   const playSynced = useCallback(({ trackId, provider: p, hookStart, hookDuration }: SyncedHook) => {
     if (p === 'youtube') {
@@ -84,13 +88,13 @@ export function useGameAudio(
   }, [card, ytPlayer, play]);
 
   useEffect(() => {
-    if (!room?.config.syncAudio) return;
+    if (!syncAudio) return;
     return onAudioPlay((hook) => {
       if (canPlay) return;
       setLastSync(hook);
       playSynced(hook);
     });
-  }, [room?.config.syncAudio, onAudioPlay, canPlay, playSynced]);
+  }, [syncAudio, onAudioPlay, canPlay, playSynced]);
 
   const retrySync = useCallback(() => {
     if (lastSync) playSynced(lastSync);
@@ -134,8 +138,8 @@ export function useGameAudio(
       play(trackId, provider, song.hookStart, song.hookDuration);
     }
 
-    if (room?.config.syncAudio) notifyAudioStarted();
-  }, [room?.config.syncAudio, provider, ytPlayer, play, notifyAudioStarted]);
+    if (syncAudio) notifyAudioStarted();
+  }, [syncAudio, provider, ytPlayer, play, notifyAudioStarted]);
 
   const handlePlay = useCallback(() => {
     if (card && canPlay) playSong(card);
@@ -172,7 +176,7 @@ export function useGameAudio(
     missingYouTubeVideo,
     thumbnailUrl,
     ytContainerRef: ytPlayer.containerRef,
-    needsAudioUnlock: !!room?.config.syncAudio && !audioUnlocked,
+    needsAudioUnlock: syncAudio && !audioUnlocked,
     unlockAudio,
     playSong,
     syncFailed: !canPlay && !!lastSync && provider === 'youtube' && (ytPlayer.isBlocked || !!ytPlayer.error),

@@ -226,14 +226,11 @@ io.on('connection', (socket) => {
 
   socket.on('game:audio:started', () => {
     const room = rm.getRoomByPlayer(socket.id);
-    if (!room?.config.syncAudio || room.pregameReadyIds) return;
+    // En el rosco el track es la respuesta: reenviarlo se la entrega a quien debe adivinar.
+    if (!room?.config.syncAudio || room.rosco || room.pregameReadyIds) return;
+    if (room.players[room.currentPlayerIndex]?.id !== socket.id) return;
 
-    const presenterId = room.rosco
-      ? room.hostId
-      : room.players[room.currentPlayerIndex]?.id;
-    if (presenterId !== socket.id) return;
-
-    const card = room.rosco ? rm.roscoActiveCell(room.code)?.song : room.currentCard;
+    const card = room.currentCard;
     if (!card) return;
 
     const provider = room.config.provider;

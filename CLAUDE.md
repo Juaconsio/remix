@@ -43,6 +43,14 @@ Without Docker: `pnpm -C backend dev` (loads `backend/.env`), `pnpm -C frontend 
 - Without `YOUTUBE_API_KEY` the `/api/youtube/*` routes answer 500.
 - Tests are Vitest, `*.test.ts` next to the code: `rosco.test.ts` and `roomManager.test.ts`
   (classic mode, with `fs` mocked so it never writes `dev-rooms.json`).
+- `backend/src/index.e2e.test.ts` boots the real backend on a free port and plays a full
+  classic game (3 players) and a full rosco with `socket.io-client`. It runs inside
+  `pnpm test`; any change to socket handlers or game rules must keep it green before review.
+  It covers the protocol, not the UI.
+- The backend builds with `tsconfig.build.json`, which leaves the tests out: the Docker
+  stage installs only the backend's deps, without `vitest`. The image installs each package
+  from its own `backend/pnpm-lock.yaml` / `frontend/pnpm-lock.yaml`, so a dependency change
+  must also update that lockfile (`pnpm install --lockfile-only --ignore-workspace`).
 - In dev, rooms persist to `backend/dev-rooms.json` (survives hot reload). With
   `NODE_ENV=production` they live only in memory.
 
@@ -80,6 +88,8 @@ one per player in `turnos`. The room stays in `round_active` until every board i
 
 The host both plays and judges: only they emit `rosco:*`, and only they receive the answers.
 `publicRoom.ts` sets `song` to `null` on every unresolved cell for everyone else.
+Audio plays only on the host's device: `syncAudio` does not apply, because relaying the
+track (or the pack's `/api/youtube/playlist-map`) would hand the answer to everyone else.
 
 In `turnos`, a hit keeps the turn and a miss or *pasapalabra* passes it; passed letters come
 back on the next lap. Disconnected players are skipped and their board no longer blocks the
@@ -87,11 +97,11 @@ end of the game.
 
 ### Pregame
 
-`game:start` opens the pregame in classic always, and in rosco when `syncAudio` is on:
-`pregameReadyIds` collects whoever emits `game:pregame:ready`, and `game:flip`, `rosco:*`
-and `game:audio:started` are refused until every connected player is in it or the host emits
-`game:pregame:skip`. That tap is also the user gesture mobile browsers require before playing
-sound on a device that never touches the play button.
+`game:start` opens the pregame in classic only: `pregameReadyIds` collects whoever emits
+`game:pregame:ready`, and `game:flip` and `game:audio:started` are refused until every
+connected player is in it or the host emits `game:pregame:skip`. That tap is also the user
+gesture mobile browsers require before playing sound on a device that never touches the play
+button.
 
 ## Audio providers
 
