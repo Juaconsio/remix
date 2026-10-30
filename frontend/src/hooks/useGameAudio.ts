@@ -116,7 +116,7 @@ export function useGameAudio(
       room?.status === 'round_active'
     ) {
       console.warn('[YouTube] Auto-skip por error de embedding:', ytPlayer.errorCode);
-      skipCard();
+      skipCard(false);
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [ytPlayer.errorCode]);

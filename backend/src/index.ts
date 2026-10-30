@@ -153,6 +153,37 @@ io.on('connection', (socket) => {
     try {
       const updated = rm.placeCard(room.code);
       broadcastRoom(updated, 'game:state');
+      const deadline = updated.stealDeadline;
+      if (deadline !== null) {
+        setTimeout(() => {
+          const closed = rm.closeSteal(updated.code, deadline);
+          if (closed) broadcastRoom(closed, 'game:state');
+        }, rm.STEAL_WINDOW_MS);
+      }
+    } catch {}
+  });
+
+  socket.on('game:steal', ({ position }: { position: number }) => {
+    const room = rm.getRoomByPlayer(socket.id);
+    if (!room) return;
+    try {
+      broadcastRoom(rm.stealCard(room.code, socket.id, position), 'game:state');
+    } catch {}
+  });
+
+  socket.on('game:steal:pass', () => {
+    const room = rm.getRoomByPlayer(socket.id);
+    if (!room) return;
+    try {
+      broadcastRoom(rm.passSteal(room.code, socket.id), 'game:state');
+    } catch {}
+  });
+
+  socket.on('game:token:award', () => {
+    const room = rm.getRoomByPlayer(socket.id);
+    if (!room || room.hostId !== socket.id) return;
+    try {
+      broadcastRoom(rm.awardToken(room.code), 'game:state');
     } catch {}
   });
 
@@ -167,14 +198,14 @@ io.on('connection', (socket) => {
     } catch {}
   });
 
-  socket.on('game:skip', () => {
+  socket.on('game:skip', (payload?: { paid?: boolean }) => {
     const room = rm.getRoomByPlayer(socket.id);
     if (!room) return;
     const activePlayer = room.players[room.currentPlayerIndex];
     if (activePlayer?.id !== socket.id) return;
     if (room.status !== 'round_active') return;
     try {
-      const updated = rm.skipCard(room.code);
+      const updated = rm.skipCard(room.code, payload?.paid === true);
       broadcastRoom(updated, 'game:state');
     } catch {}
   });

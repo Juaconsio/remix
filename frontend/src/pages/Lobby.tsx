@@ -12,6 +12,8 @@ const PACKS = [
   { id: 'base',        name: 'Pack Base',    description: '20 hits de todos los tiempos (1967–2023)' },
   { id: 'indie-vibes', name: 'Indie Vibes',  description: '15 canciones indie/alternativas' },
   { id: 'pop-latino',  name: 'Pop Latino',   description: 'Morat, Camilo, Greeicy, Yatra y más' },
+  { id: 'chile',       name: 'Chile',        description: 'De Violeta Parra a Cris MJ (1966–2022)' },
+  { id: 'reggaeton',   name: 'Reggaetón',    description: 'De Gasolina a DtMF (2002–2025)' },
 ];
 
 const MODES: { id: GameMode; name: string; description: string }[] = [
