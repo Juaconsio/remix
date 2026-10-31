@@ -10,11 +10,12 @@ function listNames(names: string[]): string {
 
 export default function Results() {
   const navigate = useNavigate();
-  const { room, leaveRoom } = useSocket();
+  const { room, myPlayerId, leaveRoom, returnToLobby } = useSocket();
   const prefersReduced = useReducedMotion() ?? false;
 
   useEffect(() => {
     if (!room) navigate('/');
+    else if (room.status === 'lobby') navigate(`/lobby/${room.code}`);
   }, [room, navigate]);
 
   if (!room) return null;
@@ -129,14 +130,26 @@ export default function Results() {
           })}
         </div>
 
-        {/* CTA */}
-        <button
-          onClick={() => { leaveRoom(); navigate('/'); }}
-          className="btn-game mt-8"
-        >
-          <span>nueva partida.</span>
-          <span>→</span>
-        </button>
+        {room.hostId === myPlayerId ? (
+          <div className="flex flex-col gap-[10px] mt-8">
+            <button onClick={returnToLobby} className="btn-game">
+              <span>otra con esta mesa.</span>
+              <span>→</span>
+            </button>
+            <button onClick={() => { leaveRoom(); navigate('/'); }} className="btn-secondary btn-secondary-light">
+              salir
+            </button>
+          </div>
+        ) : (
+          <div className="flex flex-col gap-[10px] mt-8">
+            <p className="font-mono-cut text-center text-song-on-primary" style={{ fontSize: 11, opacity: 0.75 }}>
+              si el host arma otra, entras directo.
+            </p>
+            <button onClick={() => { leaveRoom(); navigate('/'); }} className="btn-secondary btn-secondary-light">
+              salir
+            </button>
+          </div>
+        )}
       </div>
     </main>
   );

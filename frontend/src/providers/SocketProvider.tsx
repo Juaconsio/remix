@@ -153,6 +153,11 @@ export function SocketProvider({ children }: { children: ReactNode }) {
     socketRef.current?.emit('game:pregame:skip');
   }, []);
 
+  const pauseGame = useCallback(() => { socketRef.current?.emit('game:pause'); }, []);
+  const resumeGame = useCallback(() => { socketRef.current?.emit('game:resume'); }, []);
+  const endGame = useCallback(() => { socketRef.current?.emit('game:end'); }, []);
+  const returnToLobby = useCallback(() => { socketRef.current?.emit('game:lobby'); }, []);
+
   const onAudioPlay = useCallback((handler: ServerToClientEvents['game:audio:play']) => {
     socketRef.current?.on('game:audio:play', handler);
     return () => { socketRef.current?.off('game:audio:play', handler); };
@@ -185,6 +190,10 @@ export function SocketProvider({ children }: { children: ReactNode }) {
     roscoCorrect,
     roscoWrong,
     roscoPass,
+    pauseGame,
+    resumeGame,
+    endGame,
+    returnToLobby,
   };
 
   return <SocketContext.Provider value={value}>{children}</SocketContext.Provider>;
