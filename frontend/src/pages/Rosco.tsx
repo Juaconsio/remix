@@ -7,6 +7,7 @@ import { YouTubePlayer } from '../game/components/YouTubePlayer';
 import { RoscoBoard } from '../game/components/RoscoBoard';
 import { RoscoControls } from '../game/components/RoscoControls';
 import { SettingsTrigger } from '../game/components/SettingsTrigger';
+import { PauseOverlay } from '../game/components/PauseOverlay';
 import { boardFor, firstActiveIndex } from '../utils/rosco';
 import { cn } from '../utils/cn';
 
@@ -20,6 +21,7 @@ export default function Rosco() {
     roscoCorrect,
     roscoWrong,
     roscoPass,
+    resumeGame,
   } = useSocket();
 
   const isHost = !!room && room.hostId === myPlayerId;
@@ -42,8 +44,9 @@ export default function Rosco() {
   }, [room, navigate]);
 
   const { stop } = activePlayer;
+  const isPaused = !!room?.paused;
   // El rosco no pasa por 'validating', así que nada corta el audio entre letras.
-  useEffect(() => { stop(); }, [letterKey, stop]);
+  useEffect(() => { stop(); }, [letterKey, isPaused, stop]);
 
   if (!room?.rosco || !board) return null;
 
@@ -129,6 +132,13 @@ export default function Rosco() {
             : 'escucha y responde en voz alta.'}
         </p>
       )}
+
+      <PauseOverlay
+        isPaused={room.paused}
+        hostName={room.players.find((p) => p.id === room.hostId)?.name ?? 'el host'}
+        isHost={isHost}
+        onResume={resumeGame}
+      />
 
       {/* YouTube iframe — always off-screen, never display:none */}
       <div

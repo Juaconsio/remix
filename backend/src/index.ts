@@ -224,6 +224,22 @@ io.on('connection', (socket) => {
     broadcastRoom(rm.skipPregame(room.code), 'game:state');
   });
 
+  const hostActions = {
+    'game:pause': rm.pauseGame,
+    'game:resume': rm.resumeGame,
+    'game:end': rm.endGame,
+    'game:lobby': rm.returnToLobby,
+  } as const;
+  for (const [event, action] of Object.entries(hostActions)) {
+    socket.on(event as keyof typeof hostActions, () => {
+      const room = rm.getRoomByPlayer(socket.id);
+      if (!room || room.hostId !== socket.id) return;
+      try {
+        broadcastRoom(action(room.code), 'game:state');
+      } catch {}
+    });
+  }
+
   socket.on('game:audio:started', () => {
     const room = rm.getRoomByPlayer(socket.id);
     // En el rosco el track es la respuesta: reenviarlo se la entrega a quien debe adivinar.

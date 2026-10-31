@@ -34,6 +34,7 @@ for (const room of rooms.values()) {
   room.stealDeadline ??= null;
   room.stealWinnerId ??= null;
   room.tokenAwarded ??= false;
+  room.paused ??= false;
   room.players.forEach((p) => { p.tokens ??= 0; });
   if (room.status === 'stealing') resolveRound(room);
 }
@@ -81,6 +82,7 @@ export function createRoom(hostId: string, hostName: string): Room {
     tokenAwarded: false,
     rosco: null,
     pregameReadyIds: null,
+    paused: false,
   };
   rooms.set(code, room);
   saveRooms();
@@ -139,7 +141,61 @@ export function getRoomByPlayer(playerId: string): Room | undefined {
 export function updateConfig(code: string, config: Partial<RoomConfig>): Room {
   const room = rooms.get(code);
   if (!room) throw new Error('Sala no encontrada');
-  Object.assign(room.config, config);
+  if (room.status === 'lobby') Object.assign(room.config, config);
+  else if (config.syncAudio !== undefined) room.config.syncAudio = config.syncAudio;
+  saveRooms();
+  return room;
+}
+
+export function canPause(room: Room): boolean {
+  if (room.paused || room.pregameReadyIds) return false;
+  if (room.rosco) return room.status === 'round_active';
+  return room.status === 'setup' || room.status === 'validating';
+}
+
+function assertNotPaused(room: Room) {
+  if (room.paused) throw new Error('La partida está en pausa');
+}
+
+export function pauseGame(code: string): Room {
+  const room = rooms.get(code);
+  if (!room || !canPause(room)) throw new Error('No se puede pausar ahora');
+  room.paused = true;
+  saveRooms();
+  return room;
+}
+
+export function resumeGame(code: string): Room {
+  const room = rooms.get(code);
+  if (!room) throw new Error('Sala no encontrada');
+  room.paused = false;
+  saveRooms();
+  return room;
+}
+
+export function endGame(code: string): Room {
+  const room = rooms.get(code);
+  if (!room || room.status === 'lobby') throw new Error('No hay partida en curso');
+  room.status = 'finished';
+  room.paused = false;
+  saveRooms();
+  return room;
+}
+
+export function returnToLobby(code: string): Room {
+  const room = rooms.get(code);
+  if (!room) throw new Error('Sala no encontrada');
+  room.players = room.players
+    .filter((p) => p.connected)
+    .map((p) => newPlayer(p.id, p.name));
+  room.status = 'lobby';
+  room.deck = [];
+  room.currentPlayerIndex = 0;
+  room.currentCard = null;
+  resetRound(room);
+  room.rosco = null;
+  room.pregameReadyIds = null;
+  room.paused = false;
   saveRooms();
   return room;
 }
@@ -292,6 +348,7 @@ export function startGame(code: string): Room {
   room.players.forEach((p) => { p.timeline = []; p.score = 0; p.tokens = STARTING_TOKENS; p.startingOptions = []; });
   room.currentPlayerIndex = 0;
   room.currentCard = null;
+  room.paused = false;
   resetRound(room);
 
   if (room.config.mode === 'rosco') {
@@ -331,6 +388,7 @@ export function flipCard(code: string): Room {
   const room = rooms.get(code);
   if (!room || room.deck.length === 0) throw new Error('No hay cartas');
   assertPregameOver(room);
+  assertNotPaused(room);
   const [card, ...rest] = room.deck;
   room.currentCard = card;
   room.deck = rest;
@@ -443,6 +501,7 @@ export function closeSteal(code: string, deadline: number): Room | undefined {
 export function awardToken(code: string): Room {
   const room = rooms.get(code);
   if (!room || room.status !== 'validating' || room.tokenAwarded) throw new Error('No se puede dar ficha ahora');
+  assertNotPaused(room);
   const active = room.players[room.currentPlayerIndex];
   active.tokens = Math.min(MAX_TOKENS, active.tokens + 1);
   room.tokenAwarded = true;
@@ -468,8 +527,8 @@ export function skipCard(code: string, paid = false): Room {
 export function nextTurn(code: string): Room {
   const room = rooms.get(code);
   if (!room) throw new Error('Sala no encontrada');
+  assertNotPaused(room);
 
-  // Comprobar victoria
   const winner = room.players.find((p) => p.score >= WIN_SCORE);
   if (winner || room.deck.length === 0) {
     room.status = 'finished';
@@ -485,6 +544,7 @@ export function nextTurn(code: string): Room {
 function applyRosco(code: string, action: (room: Room) => boolean): Room {
   const room = rooms.get(code);
   if (!room || !room.rosco) throw new Error('Sala sin partida de rosco');
+  assertNotPaused(room);
   if (!action(room)) throw new Error('Jugada de rosco inválida');
   saveRooms();
   return room;

@@ -74,6 +74,7 @@ function room(subMode: 'paralelo' | 'turnos', packEntries: RoscoEntry[], names =
       boards: subMode === 'paralelo' ? [buildCells(packEntries)] : players.map(() => buildCells(packEntries)),
     },
     pregameReadyIds: null,
+    paused: false,
   };
 }
 

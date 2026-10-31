@@ -103,6 +103,20 @@ connected player is in it or the host emits `game:pregame:skip`. That tap is als
 gesture mobile browsers require before playing sound on a device that never touches the play
 button.
 
+### Host controls in game
+
+The settings panel adds a host-only section during a game: pause, `syncAudio`, back to lobby
+and end game. `room:config` only accepts `syncAudio` outside the lobby: the deck and the boards
+are built in `game:start`.
+
+`game:pause` only works where nothing is running: in classic during `setup` (after the pregame)
+and `validating`, in rosco on any letter. `canPause` lives in `roomManager.ts` and is mirrored
+in `frontend/src/utils/pause.ts`. While `room.paused` is set, drawing, advancing, awarding
+tokens and `rosco:*` are refused until the host emits `game:resume`.
+
+`game:lobby` keeps the connected players and wipes the game; it is also how the host starts
+another game from the results screen.
+
 ## Audio providers
 
 `deezer` and `spotify` play 30 s previews through `useAudio` (Howler.js) and

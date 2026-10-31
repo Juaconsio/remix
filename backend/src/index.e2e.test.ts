@@ -185,6 +185,29 @@ describe('partida clásica completa con 3 jugadores', () => {
   }, 30_000);
 });
 
+describe('pausa del host', () => {
+  it('congela la jugada para toda la mesa y solo el host la levanta', async () => {
+    const players = await openTable(['ana', 'bea'], { mode: 'classic', provider: 'deezer', syncAudio: true });
+    const [host, guest] = players;
+    await host.act('game:start', undefined, (r) => r.status === 'setup');
+    await host.act('game:pregame:skip', undefined, (r) => r.pregameReadyIds === null);
+
+    const guestSeesPause = guest.next((r) => r.paused);
+    await host.act('game:pause', undefined, (r) => r.paused);
+    await guestSeesPause;
+
+    host.socket.emit('game:flip');
+    guest.socket.emit('game:resume');
+    const stillPaused = await host.act('room:config', { syncAudio: false }, (r) => !r.config.syncAudio);
+    expect(stillPaused).toMatchObject({ paused: true, status: 'setup', currentCard: null });
+
+    await host.act('game:resume', undefined, (r) => !r.paused);
+    const flipped = await host.act('game:flip', undefined, (r) => r.status === 'round_active');
+    expect(flipped.currentCard).not.toBeNull();
+    players.forEach((p) => p.close());
+  }, 30_000);
+});
+
 describe('rosco paralelo completo', () => {
   it('el host juzga hasta el final y los demás nunca reciben la respuesta', async () => {
     const players = await openTable(['ana', 'bea'], { mode: 'rosco', roscoSubMode: 'paralelo', provider: 'deezer', syncAudio: true });

@@ -1,10 +1,15 @@
 import { motion, AnimatePresence } from 'framer-motion';
 import { useThemeStore } from '../../store/themeStore';
 import { useSettingsStore } from '../../store/settingsStore';
+import { useSocket } from '../../hooks/useSocket';
+import { isInGame } from '../../utils/pause';
+import { HostGameSettings } from './HostGameSettings';
 
 export function SettingsPanel() {
   const { isOpen, close } = useSettingsStore();
   const { override, setOverride } = useThemeStore();
+  const { room, myPlayerId } = useSocket();
+  const isHostInGame = isInGame(room) && room.hostId === myPlayerId;
 
   const systemDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
   const effectiveDark = override === 'dark' || (override === null && systemDark);
@@ -27,16 +32,14 @@ export function SettingsPanel() {
             className="fixed inset-0 z-[600] bg-black/45"
           />
 
-          {/* Drawer */}
           <motion.div
             initial={{ y: '100%' }}
             animate={{ y: 0 }}
             exit={{ y: '100%' }}
             transition={{ type: 'spring', damping: 32, stiffness: 340 }}
-            className="fixed bottom-0 left-0 right-0 z-[601] bg-surface rounded-t-3xl px-6 pt-5 pb-12 max-w-107.5 mx-auto"
+            className="fixed bottom-0 left-0 right-0 z-[601] bg-surface rounded-t-3xl px-6 pt-5 pb-12 max-w-107.5 mx-auto max-h-[90dvh] overflow-y-auto"
             style={{ boxShadow: '0 -4px 32px rgba(0,0,0,0.18)' }}
           >
-            {/* Handle */}
             <div className="w-10 h-1 rounded-full bg-border mx-auto mb-6" />
 
             <p className="font-mono-cut text-muted mb-5" style={{ fontSize: 11 }}>
@@ -83,6 +86,8 @@ export function SettingsPanel() {
                 usar preferencia del sistema
               </button>
             )}
+
+            {isHostInGame && <HostGameSettings room={room} onDone={close} />}
           </motion.div>
         </>
       )}

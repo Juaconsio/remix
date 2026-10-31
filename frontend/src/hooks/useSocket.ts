@@ -28,6 +28,10 @@ export interface SocketContextValue {
   notifyAudioStarted: () => void;
   confirmPregame: (songId?: string) => void;
   skipPregame: () => void;
+  pauseGame: () => void;
+  resumeGame: () => void;
+  endGame: () => void;
+  returnToLobby: () => void;
   onAudioPlay: (handler: ServerToClientEvents['game:audio:play']) => () => void;
 }
 
