@@ -495,3 +495,77 @@ describe('nextTurn', () => {
     expect(rm.nextTurn(room.code).status).toBe('finished');
   });
 });
+
+describe('pausa', () => {
+  it('se puede pausar antes de sacar carta y durante la revelación', () => {
+    const room = classicRoom();
+    expect(rm.pauseGame(room.code).paused).toBe(true);
+    rm.resumeGame(room.code);
+    expect(playCorrectTurn(room.code).status).toBe('validating');
+    expect(rm.pauseGame(room.code).paused).toBe(true);
+  });
+
+  it('no se puede pausar con la canción sonando, en la ventana de robo ni en el pregame', () => {
+    expect(() => rm.pauseGame(startedRoom(2).code)).toThrow();
+    const room = classicRoom(3);
+    const flipped = rm.flipCard(room.code);
+    expect(() => rm.pauseGame(room.code)).toThrow();
+    rm.selectPosition(room.code, correctPosition(flipped));
+    expect(rm.placeCard(room.code).status).toBe('stealing');
+    expect(() => rm.pauseGame(room.code)).toThrow();
+  });
+
+  it('en pausa no se saca carta, no se avanza ni se da ficha', () => {
+    const room = classicRoom();
+    rm.pauseGame(room.code);
+    expect(() => rm.flipCard(room.code)).toThrow();
+    rm.resumeGame(room.code);
+    playCorrectTurn(room.code);
+    rm.pauseGame(room.code);
+    expect(() => rm.nextTurn(room.code)).toThrow();
+    expect(() => rm.awardToken(room.code)).toThrow();
+    rm.resumeGame(room.code);
+    expect(rm.nextTurn(room.code).status).toBe('setup');
+  });
+
+  it('en el rosco se pausa en cualquier letra y congela las jugadas del host', () => {
+    const lobby = rm.createRoom(`host-${nextHost++}`, 'ana');
+    rm.joinRoom(lobby.code, 'p-rosco', 'bea');
+    rm.updateConfig(lobby.code, { mode: 'rosco' });
+    const room = rm.startGame(lobby.code);
+    rm.pauseGame(room.code);
+    expect(() => rm.roscoSkip(room.code)).toThrow();
+    rm.resumeGame(room.code);
+    expect(() => rm.roscoSkip(room.code)).not.toThrow();
+  });
+});
+
+describe('ajustes en partida', () => {
+  it('solo deja cambiar el audio en todos los dispositivos', () => {
+    const room = classicRoom();
+    rm.updateConfig(room.code, { syncAudio: false, mode: 'rosco', packId: 'chile' });
+    expect(room.config).toMatchObject({ syncAudio: false, mode: 'classic', packId: 'base' });
+  });
+});
+
+describe('salir de la partida', () => {
+  it('terminar lleva a los resultados con el marcador actual', () => {
+    const room = classicRoom();
+    playCorrectTurn(room.code);
+    const ended = rm.endGame(room.code);
+    expect(ended.status).toBe('finished');
+    expect(ended.players[0].score).toBe(1);
+  });
+
+  it('volver al lobby conserva la mesa conectada y borra la partida', () => {
+    const room = classicRoom(3);
+    playCorrectTurn(room.code);
+    rm.removePlayer(room.players[2].id);
+    rm.pauseGame(room.code);
+    const lobby = rm.returnToLobby(room.code);
+    expect(lobby).toMatchObject({ status: 'lobby', paused: false, deck: [], currentCard: null, rosco: null });
+    expect(lobby.players.map((p) => p.name)).toEqual(['ana', 'jugador 1']);
+    expect(lobby.players.every((p) => p.score === 0 && p.timeline.length === 0)).toBe(true);
+    expect(rm.startGame(lobby.code).status).toBe('setup');
+  });
+});

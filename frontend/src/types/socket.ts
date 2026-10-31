@@ -72,6 +72,7 @@ export interface Room {
   tokenAwarded: boolean;
   rosco: RoscoState | null;
   pregameReadyIds: string[] | null;
+  paused: boolean;
 }
 
 // Eventos cliente → servidor
@@ -92,6 +93,10 @@ export interface ClientToServerEvents {
   'game:steal': (payload: { position: number }) => void;
   'game:steal:pass': () => void;
   'game:token:award': () => void;
+  'game:pause': () => void;
+  'game:resume': () => void;
+  'game:end': () => void;
+  'game:lobby': () => void;
   'rosco:award': (payload: { playerId: string; award: Award }) => void;
   'rosco:skip': () => void;
   'rosco:correct': (payload: { award: Award }) => void;

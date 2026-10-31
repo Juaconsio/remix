@@ -68,4 +68,5 @@ export interface Room {
   tokenAwarded: boolean;
   rosco: RoscoState | null;
   pregameReadyIds: string[] | null;
+  paused: boolean;
 }
