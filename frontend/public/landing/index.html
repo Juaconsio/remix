@@ -1,0 +1,241 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0e0e0e">
+<title>remix. — ¿cuánto sabes de la canción?</title>
+<meta name="description" content="El juego musical que se juega con los celulares de la mesa. Suena una canción y demuestras cuánto sabes de ella ubicándola por año.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Figtree:ital,wght@1,400;1,700;1,900&family=Space+Mono:wght@700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="cartel.css">
+<link rel="stylesheet" href="caja-vinilos.css">
+<script>document.documentElement.classList.add('js')</script>
+</head>
+<body>
+
+<svg class="definiciones" width="0" height="0" aria-hidden="true">
+  <symbol id="surcos" viewBox="0 0 200 200">
+    <circle cx="100" cy="100" r="100" fill="#262626"/>
+    <g fill="none" stroke="#0e0e0e" stroke-width="1.4">
+      <circle cx="100" cy="100" r="94"/><circle cx="100" cy="100" r="89"/><circle cx="100" cy="100" r="84"/>
+      <circle cx="100" cy="100" r="79"/><circle cx="100" cy="100" r="74"/><circle cx="100" cy="100" r="69"/>
+      <circle cx="100" cy="100" r="64"/><circle cx="100" cy="100" r="59"/><circle cx="100" cy="100" r="54"/>
+      <circle cx="100" cy="100" r="49"/><circle cx="100" cy="100" r="44"/><circle cx="100" cy="100" r="39"/>
+    </g>
+    <path d="M100 100 L168 27 A100 100 0 0 1 188 53 Z" fill="#fff4ed" opacity="0.13"/>
+    <path d="M100 100 L32 173 A100 100 0 0 1 12 147 Z" fill="#fff4ed" opacity="0.13"/>
+  </symbol>
+</svg>
+
+<template id="plantilla-vinilo">
+  <span class="vinilo"><svg class="surcos" viewBox="0 0 200 200" aria-hidden="true"><use href="#surcos"/></svg><span class="etiqueta"></span></span>
+</template>
+
+<header class="heroe">
+  <img class="heroe-foto" src="fotos/mano.jpg" width="1800" height="1012" fetchpriority="high" alt="Una mano saca un disco de una caja llena de vinilos, en una disquería a media luz.">
+  <div class="heroe-vinilo" aria-hidden="true">
+    <span class="vinilo gira" style="--etiqueta:var(--color-signal);--tinta-etiqueta:var(--negro)"><svg class="surcos" viewBox="0 0 200 200"><use href="#surcos"/></svg><span class="etiqueta">remix.</span></span>
+  </div>
+  <div class="barra">
+    <strong>remix.</strong>
+    <nav aria-label="principal">
+      <a href="#jugar">jugar</a>
+      <a href="#fichas">fichas</a>
+      <a href="#mazos">mazos</a>
+      <a href="#rosco">rosco</a>
+      <a href="#sala">armar una sala</a>
+    </nav>
+  </div>
+  <div class="heroe-pie">
+    <h1>¿cuánto sabes<br>de la canción?</h1>
+    <div class="heroe-bajada">
+      <p>el juego musical de la mesa. suena una canción, la ubicas por año y cada acierto suma.</p>
+      <a class="boton" href="/">armar una sala.</a>
+    </div>
+  </div>
+</header>
+
+<main>
+
+<section class="turno" id="jugar" data-turno aria-labelledby="titulo-turno">
+  <div class="turno-texto">
+    <h2 id="titulo-turno" data-in>tu turno.</h2>
+    <p data-in>te sale un disco y suena. hojea tu caja y mételo donde crees que va, de lo más antiguo a lo más nuevo. si calza, se queda y suma.</p>
+  </div>
+  <div class="caja" data-ui data-caja>
+    <div class="sin-js">
+      <p class="sin-js-titulo">Gasolina, Daddy Yankee</p>
+      <ol>
+        <li><b>1968</b> Hey Jude</li>
+        <li><b>1994</b> Esperando nada</li>
+        <li><b>2002</b> A Dios le pido</li>
+        <li class="sin-js-marca">va acá: 2004</li>
+        <li><b>2016</b> La bicicleta</li>
+      </ol>
+      <p>la metes en tu caja, sale el año y, si calza, suma 1 punto.</p>
+    </div>
+  </div>
+</section>
+
+<section class="pasos" aria-labelledby="titulo-pasos">
+  <img class="sangre" loading="lazy" src="fotos/tienda-1963.jpg" width="1500" height="1079" alt="Gente hojeando discos en los pasillos de una disquería con las paredes forradas de carátulas, Estados Unidos, 1963.">
+  <div class="pasos-txt">
+    <h2 id="titulo-pasos" data-in>así se juega.</h2>
+    <ol>
+      <li data-in>suena una canción.</li>
+      <li data-in>la ubicas por año en tu línea.</li>
+      <li data-in>si alguien sabe más, tiene 10 segundos para decirlo.</li>
+      <li data-in>sale el año y la mesa reacciona.</li>
+    </ol>
+  </div>
+</section>
+
+<section class="meta">
+  <p class="meta-cifra" data-in>llega a 7.</p>
+  <p data-in>empiezas eligiendo 1 de 3 canciones. cada acierto es 1 punto. gana quien llega a 7 o quien va arriba cuando se acaba el mazo.</p>
+</section>
+
+<section class="fichas" id="fichas" aria-labelledby="titulo-fichas">
+  <div class="fichas-izq">
+    <h2 id="titulo-fichas" data-in>cuida tus fichas.</h2>
+    <div class="fichas-fila" data-in aria-hidden="true">
+      <i style="--n:0"></i><i style="--n:1"></i><u style="--n:2"></u><u style="--n:3"></u><u style="--n:4"></u>
+    </div>
+  </div>
+  <ul>
+    <li data-in><span class="regla">partes con 2.</span><p>y puedes juntar hasta 5, no más.</p></li>
+    <li data-in><span class="regla">nombrarla, +1.</span><p>dices la canción y el host te da una.</p></li>
+    <li data-in><span class="regla">saltar, 1.</span><p>te sacas de encima el disco que no conoces.</p></li>
+    <li data-in><span class="regla">robar, 1.</span><p>10 segundos para marcar otro lugar en la línea del rival.</p></li>
+  </ul>
+</section>
+
+<section class="voz" aria-labelledby="titulo-voz">
+  <img class="sangre" loading="lazy" src="fotos/feria.jpg" width="1500" height="713" alt="Una mano hojea discos en una caja de feria.">
+  <div class="voz-txt">
+    <h2 id="titulo-voz" data-in>se pelea en voz alta.</h2>
+    <ul>
+      <li data-in>eso es de los 80.</li>
+      <li data-in>¿seguro?</li>
+      <li data-in>te la robo.</li>
+      <li data-in>¡era del 94!</li>
+      <li data-in>¡devuélvela!</li>
+    </ul>
+  </div>
+</section>
+
+<section class="decadas" aria-labelledby="titulo-decadas">
+  <h2 id="titulo-decadas" data-in>de los 60 a hoy.</h2>
+  <ol data-decadas>
+    <li style="--etiqueta:#ff6d00" class="encendida"><span class="vinilo"><svg class="surcos" viewBox="0 0 200 200" aria-hidden="true"><use href="#surcos"/></svg><span class="etiqueta">60s</span></span><p><b>Hey Jude</b> The Beatles, 1968</p></li>
+    <li style="--etiqueta:#e8341c"><span class="vinilo"><svg class="surcos" viewBox="0 0 200 200" aria-hidden="true"><use href="#surcos"/></svg><span class="etiqueta">70s</span></span><p><b>Hotel California</b> Eagles, 1977</p></li>
+    <li style="--etiqueta:#ff2d8f"><span class="vinilo"><svg class="surcos" viewBox="0 0 200 200" aria-hidden="true"><use href="#surcos"/></svg><span class="etiqueta">80s</span></span><p><b>El baile de los que sobran</b> Los Prisioneros, 1986</p></li>
+    <li style="--etiqueta:#ff5722"><span class="vinilo"><svg class="surcos" viewBox="0 0 200 200" aria-hidden="true"><use href="#surcos"/></svg><span class="etiqueta">90s</span></span><p><b>Esperando nada</b> Nicole, 1994</p></li>
+    <li style="--etiqueta:#2540d6;--tinta-etiqueta:#fff4ed"><span class="vinilo"><svg class="surcos" viewBox="0 0 200 200" aria-hidden="true"><use href="#surcos"/></svg><span class="etiqueta">00s</span></span><p><b>Gasolina</b> Daddy Yankee, 2004</p></li>
+    <li style="--etiqueta:#2cd9b8"><span class="vinilo"><svg class="surcos" viewBox="0 0 200 200" aria-hidden="true"><use href="#surcos"/></svg><span class="etiqueta">10s</span></span><p><b>La bicicleta</b> Carlos Vives &amp; Shakira, 2016</p></li>
+    <li style="--etiqueta:#a78bfa"><span class="vinilo"><svg class="surcos" viewBox="0 0 200 200" aria-hidden="true"><use href="#surcos"/></svg><span class="etiqueta">20s</span></span><p><b>DtMF</b> Bad Bunny, 2025</p></li>
+  </ol>
+</section>
+
+<section class="mazos" id="mazos" aria-labelledby="titulo-mazos">
+  <h2 id="titulo-mazos" data-in>cinco mazos.</h2>
+  <div class="tablon" data-ui data-in>
+    <details name="mazo" open>
+      <summary><strong>Base</strong><span>hits de todos los tiempos</span><b>la sabe tu tía</b></summary>
+      <p>el mazo para cuando en la mesa hay de todas las edades.</p>
+    </details>
+    <details name="mazo">
+      <summary><strong>Indie Vibes</strong><span>para la mesa entendida</span><b>la sabe tu ex</b></summary>
+      <p>aquí saber el año vale menos que haberla escuchado antes que los demás.</p>
+    </details>
+    <details name="mazo">
+      <summary><strong>Pop Latino</strong><span>Morat, Camilo, Greeicy, Yatra</span><b>la sabe tu prima</b></summary>
+      <p>se cantan todas, y eso no ayuda a saber de qué año son.</p>
+    </details>
+    <details name="mazo">
+      <summary><strong>Chile</strong><span>de Violeta Parra a Cris MJ</span><b>la sabe tu papá</b></summary>
+      <p>una línea entera de música de acá, y una discusión por cada disco.</p>
+    </details>
+    <details name="mazo">
+      <summary><strong>Reggaetón</strong><span>de Gasolina a DtMF</span><b>la sabe el más chico</b></summary>
+      <p>parece fácil hasta que tienes que decir cuál salió primero.</p>
+    </details>
+  </div>
+</section>
+
+<section class="rosco" id="rosco" aria-labelledby="titulo-rosco">
+  <div class="rosco-txt">
+    <h2 id="titulo-rosco" data-in>una canción por&nbsp;letra.</h2>
+    <p data-in>rosco es el otro modo. suena solo en el celular del host, y él dice quién la sacó.</p>
+    <div class="modos">
+      <div data-in>
+        <h3>paralelo</h3>
+        <p>todos a la vez. el host marca quién acertó y suma título y artista.</p>
+      </div>
+      <div data-in>
+        <h3>turnos</h3>
+        <p>cada uno su rosco. aciertas y sigues, fallas y pasa el turno, o pasapalabra.</p>
+      </div>
+    </div>
+  </div>
+  <img class="rosco-foto" loading="lazy" src="fotos/disco-en-mano.jpg" width="900" height="980" alt="Dos manos sostienen un vinilo por el borde, a contraluz de una ventana.">
+</section>
+
+<section class="host" aria-labelledby="titulo-host">
+  <h2 id="titulo-host" data-in>el host manda.</h2>
+  <div class="banda encendida">
+    <div><h3>pausa entre turnos.</h3><p>nadie saca disco hasta que él vuelva.</p></div>
+    <button class="interruptor" data-ui data-switch type="button" role="switch" aria-checked="true" aria-label="pausa entre turnos"><i></i></button>
+  </div>
+  <div class="banda">
+    <div><h3>suena en todos los celulares.</h3><p>lo decide él, y lo cambia en plena partida.</p></div>
+    <button class="interruptor" data-ui data-switch type="button" role="switch" aria-checked="false" aria-label="suena en todos los celulares"><i></i></button>
+  </div>
+  <div class="banda">
+    <div><h3>1 ficha por nombrarla.</h3><p>el host la da cuando alguien dice la canción.</p></div>
+    <button class="interruptor" data-ui data-switch type="button" role="switch" aria-checked="false" aria-label="una ficha por nombrar la canción"><i></i></button>
+  </div>
+  <div class="banda">
+    <div><h3>otra con esta mesa.</h3><p>la revancha parte con la misma sala.</p></div>
+    <button class="interruptor" data-ui data-switch type="button" role="switch" aria-checked="false" aria-label="otra con esta mesa"><i></i></button>
+  </div>
+</section>
+
+<section class="cierre" id="sala" aria-labelledby="titulo-cierre">
+  <img class="sangre" loading="lazy" src="fotos/separadores.jpg" width="1800" height="1195" alt="Filas de discos usados en sus cajas, con separadores entre ellos.">
+  <div class="cierre-txt">
+    <h2 id="titulo-cierre" data-in>¿listos?</h2>
+    <div class="cierre-bajada">
+      <p data-in>sin instalar nada, en el navegador del celular. de 2 a 8 jugadores. un host arma la sala y el resto entra con un código de 4 letras y su nombre. si alguien se cae, vuelve con su nombre y recupera su lugar.</p>
+      <a class="boton" href="/" data-in>armar una sala.</a>
+    </div>
+  </div>
+</section>
+
+</main>
+
+<footer class="pie">
+  <p class="marca" aria-hidden="true">remix.</p>
+  <div class="pie-col">
+    <ul>
+      <li><a href="#jugar">jugar</a></li>
+      <li><a href="#fichas">fichas</a></li>
+      <li><a href="#mazos">mazos</a></li>
+      <li><a href="#rosco">rosco</a></li>
+    </ul>
+    <p class="creditos">ninguna foto muestra jugadores de remix: son imágenes de terceros, recortadas y teñidas en negro y crema.
+      <a href="https://commons.wikimedia.org/wiki/File:Browsing_record_store_shelves_(Unsplash).jpg">Browsing record store shelves, Edu Grande, CC0</a>.
+      <a href="https://commons.wikimedia.org/wiki/File:US_Record_Store_1963.jpg">US Record Store 1963, Marion S. Trikosko, dominio público</a>.
+      <a href="https://commons.wikimedia.org/wiki/File:Vinyl_records_sale_(Unsplash).jpg">Vinyl records sale, Clem Onojeghuo, CC0</a>.
+      <a href="https://commons.wikimedia.org/wiki/File:Selecting_a_vinyl_record_from_a_home_library_shelf.jpg">Selecting a vinyl record from a home library shelf, Shixart1985</a>, <a href="https://creativecommons.org/licenses/by/2.0/">CC BY 2.0</a>.
+      <a href="https://commons.wikimedia.org/wiki/File:Vinyl_collection_at_a_record_store_(Unsplash).jpg">Vinyl collection at a record store, Mr Cup / Fabien Barral, CC0</a>.
+    </p>
+  </div>
+</footer>
+
+<script src="caja-vinilos.js"></script>
+<script src="caja.js"></script>
+</body>
+</html>
