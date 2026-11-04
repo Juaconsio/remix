@@ -10,32 +10,23 @@ interface PlayerHeaderProps {
 
 export function PlayerHeader({ player, cardsLeft, signal }: PlayerHeaderProps) {
   const onPrimary = signal?.onPrimary ?? '#fff4ed';
-  const hasCardsLeft = cardsLeft !== undefined;
+  const cards = cardsLeft === undefined ? null : `${cardsLeft} ${cardsLeft === 1 ? 'carta' : 'cartas'}`;
+  const tokens = `${player.tokens} ${player.tokens === 1 ? 'ficha' : 'fichas'}`;
 
   return (
     <div
-      className="relative z-10 flex items-center justify-between px-5 py-3 text-song-on-primary dark:text-ink"
-      style={{ '--song-on-primary': onPrimary } as React.CSSProperties}
+      className="relative z-10 px-5 py-3 font-mono-cut tracking-[0.12em] text-song-on-primary dark:text-ink"
+      style={{ '--song-on-primary': onPrimary, fontSize: 11 } as React.CSSProperties}
     >
-      {hasCardsLeft && (
-        <span className="font-mono-cut tracking-[0.12em]" style={{ fontSize: 11, opacity: 0.75 }}>
-          {cardsLeft} {cardsLeft === 1 ? 'carta' : 'cartas'}
-        </span>
-      )}
-
-      <span
-        className="font-mono-cut tracking-[0.12em] overflow-hidden text-ellipsis whitespace-nowrap max-w-30"
-        style={{ fontSize: 11, opacity: 0.75, flex: hasCardsLeft ? undefined : 1 }}
-      >
-        {player.name}
-      </span>
-
-      <div className="flex items-center gap-2.5">
-        <span className="font-mono-cut tracking-[0.12em]" style={{ fontSize: 11, opacity: 0.75 }}>
-          {player.score} pts · {player.tokens} {player.tokens === 1 ? 'ficha' : 'fichas'}
+      <div className="flex items-center justify-between gap-4">
+        <span className="min-w-0 truncate" style={{ opacity: 0.75 }}>
+          {player.name}
         </span>
         <SettingsTrigger color="var(--cut-ink)" />
       </div>
+      <p className="mt-1 whitespace-nowrap" style={{ opacity: 0.75 }}>
+        {[cards, `${player.score} pts`, tokens].filter(Boolean).join(' · ')}
+      </p>
     </div>
   );
 }

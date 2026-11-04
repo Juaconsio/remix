@@ -39,7 +39,7 @@ export default function Results() {
       {/* Diagonal ink */}
       <div className="cut-diagonal" />
 
-      <div className="relative z-2 flex-1 flex flex-col px-5 pt-12 pb-8">
+      <div className="relative z-2 flex-1 flex flex-col px-5 pt-12 pb-safe">
 
         {/* Winner announcement */}
         <motion.div

@@ -37,7 +37,7 @@ export function SettingsPanel() {
             animate={{ y: 0 }}
             exit={{ y: '100%' }}
             transition={{ type: 'spring', damping: 32, stiffness: 340 }}
-            className="fixed bottom-0 left-0 right-0 z-[601] bg-surface rounded-t-3xl px-6 pt-5 pb-12 max-w-107.5 mx-auto max-h-[90dvh] overflow-y-auto"
+            className="fixed bottom-0 left-0 right-0 z-[601] bg-surface rounded-t-3xl px-6 pt-5 pb-[max(3rem,calc(env(safe-area-inset-bottom)+1.5rem))] max-w-107.5 mx-auto max-h-[90dvh] overflow-y-auto overscroll-contain"
             style={{ boxShadow: '0 -4px 32px rgba(0,0,0,0.18)' }}
           >
             <div className="w-10 h-1 rounded-full bg-border mx-auto mb-6" />
@@ -62,10 +62,10 @@ export function SettingsPanel() {
                 )}
               </div>
 
-              {/* Toggle button — colors are intentionally hardcoded (always light/dark regardless of theme) */}
               <button
                 onClick={toggleTheme}
-                className="relative shrink-0 w-[52px] h-7 rounded-full border-none cursor-pointer transition-colors duration-200"
+                aria-label={effectiveDark ? 'cambiar a modo claro' : 'cambiar a modo oscuro'}
+                className="relative shrink-0 w-[52px] h-7 rounded-full border-none cursor-pointer transition-colors duration-200 before:absolute before:-inset-y-2 before:-inset-x-1 before:content-['']"
                 style={{ background: effectiveDark ? '#fff4ed' : '#0e0e0e' }}
               >
                 <motion.div
@@ -80,7 +80,7 @@ export function SettingsPanel() {
             {override !== null && (
               <button
                 onClick={() => setOverride(null)}
-                className="font-mono-cut text-muted bg-transparent border-none cursor-pointer underline underline-offset-[3px] mt-4 p-0"
+                className="font-mono-cut text-muted bg-transparent border-none cursor-pointer underline underline-offset-[3px] mt-1 min-h-11 p-0"
                 style={{ fontSize: 11 }}
               >
                 usar preferencia del sistema

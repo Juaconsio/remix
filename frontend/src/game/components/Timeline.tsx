@@ -41,10 +41,9 @@ export function Timeline({
         {label}
       </p>
 
-      {/* Horizontal scroll container */}
       <div
         ref={scrollRef}
-        className="overflow-x-auto overflow-y-visible pb-2"
+        className="overflow-x-auto overflow-y-visible overscroll-x-contain pb-2"
         style={{
           WebkitOverflowScrolling: 'touch',
           scrollbarWidth: 'none',
@@ -61,7 +60,7 @@ export function Timeline({
                 onClick={() => isSelectable && onSelectPosition(i)}
                 disabled={!isSelectable}
                 className={cn(
-                  'px-3 py-2 rounded-[14px] shrink-0 min-w-11 flex items-center justify-center gap-1 transition-[border-color,background,transform] duration-150 ease-[cubic-bezier(0.23,1,0.32,1)] enabled:active:scale-95 motion-reduce:enabled:active:scale-100',
+                  'px-3 py-2 rounded-[14px] shrink-0 min-w-11 min-h-11 flex items-center justify-center gap-1 transition-[border-color,background,transform] duration-150 ease-[cubic-bezier(0.23,1,0.32,1)] enabled:active:scale-95 motion-reduce:enabled:active:scale-100',
                   selectedPosition === i
                     ? 'bg-song-primary text-song-on-primary border-2 border-song-primary'
                     : takenBy !== undefined

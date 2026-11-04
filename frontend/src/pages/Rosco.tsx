@@ -54,7 +54,7 @@ export default function Rosco() {
   const hookDuration = activeCell?.song?.hookDuration ?? 15;
 
   return (
-    <main className="flex flex-col px-0 pt-10 pb-8 max-w-sm mx-auto bg-bg text-ink min-h-dvh">
+    <main className="flex flex-col px-0 pt-10 pb-safe max-w-sm mx-auto bg-bg text-ink min-h-dvh">
       <div className="flex justify-end px-5 mb-4 -mt-4">
         <SettingsTrigger />
       </div>

@@ -198,7 +198,7 @@ export default function Game() {
         )}
 
         {room.status === 'round_active' && isActivePlayer && (
-          <div className="flex flex-col gap-[10px] px-5 pb-8 pt-2">
+          <div className="flex flex-col gap-[10px] px-5 pb-safe pt-2">
             {missingYouTubeVideo || !!displayError ? (
               <button
                 onClick={() => skipCard(false)}
@@ -236,7 +236,7 @@ export default function Game() {
         )}
 
         {room.status === 'round_active' && !isActivePlayer && syncFailed && (
-          <div className="px-5 pb-8 pt-2">
+          <div className="px-5 pb-safe pt-2">
             <button onClick={retrySync} className="btn-secondary btn-secondary-light dark:border-ink dark:text-ink">
               ¿no la escuchas? toca aquí
             </button>
@@ -244,7 +244,7 @@ export default function Game() {
         )}
 
         {canSteal && (
-          <div className="flex flex-col gap-[10px] px-5 pb-8 pt-2">
+          <div className="flex flex-col gap-[10px] px-5 pb-safe pt-2">
             <button
               onClick={() => { if (stealPosition !== null) stealCard(stealPosition); }}
               disabled={stealPosition === null}
@@ -260,7 +260,7 @@ export default function Game() {
         )}
 
         {isStealing && !canSteal && (
-          <div className="px-5 pb-8 pt-2 text-center">
+          <div className="px-5 pb-safe pt-2 text-center">
             <p className="font-mono-cut text-song-on-primary dark:text-ink" style={{ fontSize: 11, opacity: 0.6 }}>
               {isActivePlayer
                 ? 'los demás deciden si roban…'
@@ -274,7 +274,7 @@ export default function Game() {
         )}
 
         {room.status === 'setup' && isActivePlayer && (
-          <div className="px-5 pb-8 text-center">
+          <div className="px-5 pb-safe text-center">
             <button onClick={drawAndPlay} className="btn-game">
               <span>sacar carta.</span>
               <span>→</span>
@@ -283,7 +283,7 @@ export default function Game() {
         )}
 
         {room.status === 'setup' && !isActivePlayer && (
-          <div className="px-5 pb-8 pt-6 text-center">
+          <div className="px-5 pb-safe pt-6 text-center">
             <p className="font-mono-cut text-song-on-primary dark:text-ink" style={{ fontSize: 11, opacity: 0.6 }}>
               esperando a {currentPlayer.name}…
             </p>
