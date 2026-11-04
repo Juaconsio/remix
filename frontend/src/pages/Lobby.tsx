@@ -4,7 +4,7 @@ import { useAutoAnimate } from '@formkit/auto-animate/react';
 import { useSocket } from '../hooks/useSocket';
 import { DEFAULT_SIGNAL, avatarColors } from '../utils/songColor';
 import type { MusicProvider } from '../types/game';
-import type { GameMode, RoomConfig, RoscoSubMode } from '../types/socket';
+import type { AudioOutput, GameMode, RoomConfig, RoscoSubMode } from '../types/socket';
 import { SettingsTrigger } from '../game/components/SettingsTrigger';
 import { cn } from '../utils/cn';
 
@@ -30,6 +30,12 @@ const PROVIDERS: { id: MusicProvider; name: string; description: string }[] = [
   { id: 'youtube', name: 'YouTube', description: 'Audio · sin cuenta' },
   { id: 'deezer',  name: 'Deezer',  description: 'Preview 30s · sin cuenta' },
   { id: 'spotify', name: 'Spotify', description: 'Preview 30s · requiere API key' },
+];
+
+const AUDIO_OUTPUTS: { id: AudioOutput; name: string; description: string }[] = [
+  { id: 'everyone', name: 'En todos',      description: 'Todos escuchan cuando el jugador activo da play' },
+  { id: 'host',     name: 'Solo el host',  description: 'El teléfono del host hace de parlante' },
+  { id: 'turn',     name: 'Solo el turno', description: 'Solo escucha el jugador activo' },
 ];
 
 function SectionLabel({ children }: { children: React.ReactNode }) {
@@ -140,17 +146,12 @@ function HostSettings({
 
       {/* En el rosco solo suena el host: reenviar el track les daría la respuesta a los demás. */}
       {config.mode === 'classic' && (
-        <section className="mb-8">
-          <SectionLabel>audio</SectionLabel>
-          <OptionButton
-            name="escuchar en todos los dispositivos"
-            description={config.syncAudio
-              ? 'todos escuchan cuando el jugador activo da play'
-              : 'solo el jugador activo escucha'}
-            isSelected={config.syncAudio}
-            onClick={() => updateConfig({ syncAudio: !config.syncAudio })}
-          />
-        </section>
+        <OptionGroup
+          label="dónde suena la música"
+          options={AUDIO_OUTPUTS}
+          selectedId={config.audioOutput}
+          onSelect={(audioOutput) => updateConfig({ audioOutput })}
+        />
       )}
     </>
   );

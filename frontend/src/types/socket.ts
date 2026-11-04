@@ -44,10 +44,12 @@ export interface Award {
   artist: boolean;
 }
 
+export type AudioOutput = 'everyone' | 'turn' | 'host';
+
 export interface RoomConfig {
   packId: string;
   provider: MusicProvider;
-  syncAudio: boolean;
+  audioOutput: AudioOutput;
   mode: GameMode;
   roscoSubMode: RoscoSubMode;
   roscoPackId: string;
