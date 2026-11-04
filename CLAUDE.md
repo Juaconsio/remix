@@ -78,8 +78,11 @@ Drawing and listening are one tap: the client emits `game:flip` and starts `room
 the same handler, so playback stays inside the user gesture. Hiding the deck from clients
 would break this; the server would have to send the next card's track first.
 
-With `syncAudio` on, `game:audio:started` from the active player makes the server emit
-`game:audio:play` to everyone else.
+`config.audioOutput` picks where the track plays when the active player taps play:
+`everyone` relays `game:audio:started` as `game:audio:play` to the rest of the table, `turn`
+relays nothing, and `host` plays nothing on the active player's phone and relays only to the
+host (when the host has the turn, it plays locally and nothing is relayed). Rooms saved in
+`dev-rooms.json` with the old `syncAudio` flag are migrated on load.
 
 ### Rosco
 
@@ -88,7 +91,7 @@ one per player in `turnos`. The room stays in `round_active` until every board i
 
 The host both plays and judges: only they emit `rosco:*`, and only they receive the answers.
 `publicRoom.ts` sets `song` to `null` on every unresolved cell for everyone else.
-Audio plays only on the host's device: `syncAudio` does not apply, because relaying the
+Audio plays only on the host's device: `audioOutput` does not apply, because relaying the
 track (or the pack's `/api/youtube/playlist-map`) would hand the answer to everyone else.
 
 In `turnos`, a hit keeps the turn and a miss or *pasapalabra* passes it; passed letters come
@@ -105,9 +108,9 @@ button.
 
 ### Host controls in game
 
-The settings panel adds a host-only section during a game: pause, `syncAudio`, back to lobby
-and end game. `room:config` only accepts `syncAudio` outside the lobby: the deck and the boards
-are built in `game:start`.
+The settings panel adds a host-only section during a game: pause, `audioOutput`, back to lobby
+and end game. `room:config` only accepts `audioOutput` outside the lobby: the deck and the
+boards are built in `game:start`.
 
 `game:pause` only works where nothing is running: in classic during `setup` (after the pregame)
 and `validating`, in rosco on any letter. `canPause` lives in `roomManager.ts` and is mirrored

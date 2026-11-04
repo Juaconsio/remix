@@ -30,6 +30,8 @@ function saveRooms() {
 
 const rooms = loadRooms();
 for (const room of rooms.values()) {
+  const legacyConfig = room.config as RoomConfig & { syncAudio?: boolean };
+  room.config.audioOutput ??= legacyConfig.syncAudio === false ? 'turn' : 'everyone';
   room.steals ??= [];
   room.stealDeadline ??= null;
   room.stealWinnerId ??= null;
@@ -65,7 +67,7 @@ export function createRoom(hostId: string, hostName: string): Room {
     config: {
       packId: 'base',
       provider: 'youtube',
-      syncAudio: true,
+      audioOutput: 'everyone',
       mode: 'classic',
       roscoSubMode: 'paralelo',
       roscoPackId: SAMPLE_PACK_ID,
@@ -142,7 +144,7 @@ export function updateConfig(code: string, config: Partial<RoomConfig>): Room {
   const room = rooms.get(code);
   if (!room) throw new Error('Sala no encontrada');
   if (room.status === 'lobby') Object.assign(room.config, config);
-  else if (config.syncAudio !== undefined) room.config.syncAudio = config.syncAudio;
+  else if (config.audioOutput !== undefined) room.config.audioOutput = config.audioOutput;
   saveRooms();
   return room;
 }

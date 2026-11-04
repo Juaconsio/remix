@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import type { Room } from '../../types/socket';
+import type { AudioOutput, Room } from '../../types/socket';
 import { useSocket } from '../../hooks/useSocket';
 import { canPause } from '../../utils/pause';
 import { cn } from '../../utils/cn';
@@ -35,6 +35,12 @@ function Row({ title, description, isSelected = false, disabled = false, onClick
 
 type Exit = 'lobby' | 'end';
 
+const AUDIO_OUTPUTS: { id: AudioOutput; title: string; description: string }[] = [
+  { id: 'everyone', title: 'suena en todos.', description: 'la canción suena en todos los celulares' },
+  { id: 'host', title: 'suena en tu celular.', description: 'tu celular hace de parlante' },
+  { id: 'turn', title: 'suena en el turno.', description: 'solo escucha quien tiene el turno' },
+];
+
 export function HostGameSettings({ room, onDone }: { room: Room; onDone: () => void }) {
   const { pauseGame, updateConfig, returnToLobby, endGame } = useSocket();
   const [armedExit, setArmedExit] = useState<Exit | null>(null);
@@ -59,14 +65,15 @@ export function HostGameSettings({ room, onDone }: { room: Room; onDone: () => v
         onClick={() => { pauseGame(); onDone(); }}
       />
 
-      {!room.rosco && (
+      {!room.rosco && AUDIO_OUTPUTS.map((output) => (
         <Row
-          title="todos escuchan."
-          description={room.config.syncAudio ? 'la canción suena en todos los celulares' : 'solo escucha quien tiene el turno'}
-          isSelected={room.config.syncAudio}
-          onClick={() => updateConfig({ syncAudio: !room.config.syncAudio })}
+          key={output.id}
+          title={output.title}
+          description={output.description}
+          isSelected={room.config.audioOutput === output.id}
+          onClick={() => updateConfig({ audioOutput: output.id })}
         />
-      )}
+      ))}
 
       <Row
         title={armedExit === 'lobby' ? '¿volver al lobby?' : 'volver al lobby.'}

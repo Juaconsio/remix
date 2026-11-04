@@ -40,10 +40,12 @@ export interface RoscoState {
   boards: RoscoCell[][];
 }
 
+export type AudioOutput = 'everyone' | 'turn' | 'host';
+
 export interface RoomConfig {
   packId: string;
   provider: MusicProvider;
-  syncAudio: boolean;
+  audioOutput: AudioOutput;
   mode: GameMode;
   roscoSubMode: RoscoSubMode;
   roscoPackId: string;

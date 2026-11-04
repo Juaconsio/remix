@@ -243,8 +243,11 @@ io.on('connection', (socket) => {
   socket.on('game:audio:started', () => {
     const room = rm.getRoomByPlayer(socket.id);
     // En el rosco el track es la respuesta: reenviarlo se la entrega a quien debe adivinar.
-    if (!room?.config.syncAudio || room.rosco || room.pregameReadyIds) return;
+    if (!room || room.config.audioOutput === 'turn' || room.rosco || room.pregameReadyIds) return;
     if (room.players[room.currentPlayerIndex]?.id !== socket.id) return;
+
+    const onlyHost = room.config.audioOutput === 'host';
+    if (onlyHost && socket.id === room.hostId) return;
 
     const card = room.currentCard;
     if (!card) return;
@@ -256,8 +259,8 @@ io.on('connection', (socket) => {
       ? (card.providerIds?.youtube ?? resolvedVideoId(card.id) ?? '')
       : String(card.deezerId);
 
-    // Emitir a todos menos al jugador activo (él ya está reproduciendo)
-    socket.to(room.code).emit('game:audio:play', {
+    const listeners = onlyHost ? io.to(room.hostId) : socket.to(room.code);
+    listeners.emit('game:audio:play', {
       trackId,
       provider,
       hookStart: card.hookStart,

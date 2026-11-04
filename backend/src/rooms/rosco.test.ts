@@ -54,7 +54,7 @@ function room(subMode: 'paralelo' | 'turnos', packEntries: RoscoEntry[], names =
     config: {
       packId: 'base',
       provider: 'deezer',
-      syncAudio: false,
+      audioOutput: 'turn',
       mode: 'rosco',
       roscoSubMode: subMode,
       roscoPackId: 'rosco-muestra',

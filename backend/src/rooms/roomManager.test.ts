@@ -60,7 +60,7 @@ describe('createRoom', () => {
   it('arranca en lobby con el pack base, YouTube y el audio en todos los dispositivos', () => {
     const room = rm.createRoom('solo-host', 'ana');
     expect(room.status).toBe('lobby');
-    expect(room.config).toMatchObject({ packId: 'base', provider: 'youtube', mode: 'classic', syncAudio: true });
+    expect(room.config).toMatchObject({ packId: 'base', provider: 'youtube', mode: 'classic', audioOutput: 'everyone' });
     expect(room.players).toEqual([
       { id: 'solo-host', name: 'ana', timeline: [], score: 0, tokens: 0, connected: true, startingOptions: [] },
     ]);
@@ -390,13 +390,13 @@ describe('pregame', () => {
 
   it('en rosco no hay pregame, aun con audio en todos los dispositivos', () => {
     const room = rm.createRoom(`host-${nextHost++}`, 'ana');
-    rm.updateConfig(room.code, { syncAudio: true, mode: 'rosco' });
+    rm.updateConfig(room.code, { audioOutput: 'everyone', mode: 'rosco' });
     expect(rm.startGame(room.code).pregameReadyIds).toBeNull();
   });
 
   it('en clásico siempre hay pregame, aun sin audio en todos los dispositivos', () => {
     const room = rm.createRoom(`host-${nextHost++}`, 'ana');
-    rm.updateConfig(room.code, { syncAudio: false });
+    rm.updateConfig(room.code, { audioOutput: 'turn' });
     expect(rm.startGame(room.code).pregameReadyIds).toEqual([]);
   });
 
@@ -541,10 +541,10 @@ describe('pausa', () => {
 });
 
 describe('ajustes en partida', () => {
-  it('solo deja cambiar el audio en todos los dispositivos', () => {
+  it('solo deja cambiar dónde suena la música', () => {
     const room = classicRoom();
-    rm.updateConfig(room.code, { syncAudio: false, mode: 'rosco', packId: 'chile' });
-    expect(room.config).toMatchObject({ syncAudio: false, mode: 'classic', packId: 'base' });
+    rm.updateConfig(room.code, { audioOutput: 'host', mode: 'rosco', packId: 'chile' });
+    expect(room.config).toMatchObject({ audioOutput: 'host', mode: 'classic', packId: 'base' });
   });
 });
 

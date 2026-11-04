@@ -126,7 +126,7 @@ async function passSteal(active: Player, others: Player[]): Promise<Room> {
 
 describe('partida clásica completa con 3 jugadores', () => {
   it('pregame, turnos, aciertos, errores, descarte y resultados iguales para todos', async () => {
-    const players = await openTable(['ana', 'bea', 'caro'], { mode: 'classic', provider: 'deezer', syncAudio: true });
+    const players = await openTable(['ana', 'bea', 'caro'], { mode: 'classic', provider: 'deezer', audioOutput: 'everyone' });
     const [host] = players;
     const byId = new Map(players.map((p) => [p.id, p]));
 
@@ -187,7 +187,7 @@ describe('partida clásica completa con 3 jugadores', () => {
 
 describe('pausa del host', () => {
   it('congela la jugada para toda la mesa y solo el host la levanta', async () => {
-    const players = await openTable(['ana', 'bea'], { mode: 'classic', provider: 'deezer', syncAudio: true });
+    const players = await openTable(['ana', 'bea'], { mode: 'classic', provider: 'deezer', audioOutput: 'everyone' });
     const [host, guest] = players;
     await host.act('game:start', undefined, (r) => r.status === 'setup');
     await host.act('game:pregame:skip', undefined, (r) => r.pregameReadyIds === null);
@@ -198,7 +198,7 @@ describe('pausa del host', () => {
 
     host.socket.emit('game:flip');
     guest.socket.emit('game:resume');
-    const stillPaused = await host.act('room:config', { syncAudio: false }, (r) => !r.config.syncAudio);
+    const stillPaused = await host.act('room:config', { audioOutput: 'turn' }, (r) => r.config.audioOutput === 'turn');
     expect(stillPaused).toMatchObject({ paused: true, status: 'setup', currentCard: null });
 
     await host.act('game:resume', undefined, (r) => !r.paused);
@@ -210,7 +210,7 @@ describe('pausa del host', () => {
 
 describe('rosco paralelo completo', () => {
   it('el host juzga hasta el final y los demás nunca reciben la respuesta', async () => {
-    const players = await openTable(['ana', 'bea'], { mode: 'rosco', roscoSubMode: 'paralelo', provider: 'deezer', syncAudio: true });
+    const players = await openTable(['ana', 'bea'], { mode: 'rosco', roscoSubMode: 'paralelo', provider: 'deezer', audioOutput: 'everyone' });
     const [host, guest] = players;
 
     let room = await host.act('game:start', undefined, (r) => r.status === 'round_active');

@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import type { Room, ServerToClientEvents } from '../types/socket';
+import type { AudioOutput, Room, ServerToClientEvents } from '../types/socket';
 import type { ActivePlayerState, MusicProvider, Song } from '../types/game';
 import { useSocket } from './useSocket';
 import { useAudio } from './useAudio';
@@ -39,21 +39,25 @@ export function useGameAudio(
   room: Room | null,
   { card, canPlay }: UseGameAudioOptions,
 ): UseGameAudioReturn {
-  const { skipCard, notifyAudioStarted, onAudioPlay } = useSocket();
+  const { myPlayerId, skipCard, notifyAudioStarted, onAudioPlay } = useSocket();
   const { isPlaying, isLoading, progress, error, play, stop } = useAudio();
   const ytPlayer = useYouTubePlayer();
 
   const provider = room?.config.provider ?? 'youtube';
   // El servidor no reenvía el audio del rosco: el track es la respuesta.
-  const syncAudio = !!room?.config.syncAudio && room.config.mode !== 'rosco';
+  const audioOutput: AudioOutput = room?.config.mode === 'rosco' ? 'turn' : (room?.config.audioOutput ?? 'everyone');
+  const isHost = !!room && room.hostId === myPlayerId;
+  const playsElsewhere = audioOutput === 'host' && !isHost;
   const [providerError, setProviderError] = useState<string | null>(null);
   const ytMapRef = useRef<Record<string, string>>({});
   const [audioUnlocked, setAudioUnlocked] = useState(false);
   const [lastSync, setLastSync] = useState<SyncedHook | null>(null);
+  const [requestedOnHost, setRequestedOnHost] = useState(false);
 
   useEffect(() => {
     setProviderError(null);
     setLastSync(null);
+    setRequestedOnHost(false);
   }, [card]);
 
   const stopYouTube = ytPlayer.stop;
@@ -88,13 +92,13 @@ export function useGameAudio(
   }, [card, ytPlayer, play]);
 
   useEffect(() => {
-    if (!syncAudio) return;
+    if (audioOutput === 'turn') return;
     return onAudioPlay((hook) => {
       if (canPlay) return;
       setLastSync(hook);
       playSynced(hook);
     });
-  }, [syncAudio, onAudioPlay, canPlay, playSynced]);
+  }, [audioOutput, onAudioPlay, canPlay, playSynced]);
 
   const retrySync = useCallback(() => {
     if (lastSync) playSynced(lastSync);
@@ -124,6 +128,12 @@ export function useGameAudio(
   const playSong = useCallback((song: Song) => {
     setProviderError(null);
 
+    if (playsElsewhere) {
+      notifyAudioStarted();
+      setRequestedOnHost(true);
+      return;
+    }
+
     if (provider === 'youtube') {
       const videoId = ytMapRef.current[song.id] ?? song.providerIds?.youtube;
       if (!videoId) {
@@ -138,8 +148,8 @@ export function useGameAudio(
       play(trackId, provider, song.hookStart, song.hookDuration);
     }
 
-    if (syncAudio) notifyAudioStarted();
-  }, [syncAudio, provider, ytPlayer, play, notifyAudioStarted]);
+    if (audioOutput === 'everyone') notifyAudioStarted();
+  }, [audioOutput, playsElsewhere, provider, ytPlayer, play, notifyAudioStarted]);
 
   const handlePlay = useCallback(() => {
     if (card && canPlay) playSong(card);
@@ -170,13 +180,13 @@ export function useGameAudio(
   return {
     provider,
     activePlayer,
-    hasListened: activePlayer.progress > 0,
+    hasListened: activePlayer.progress > 0 || requestedOnHost,
     displayError,
     currentCardVideoId,
     missingYouTubeVideo,
     thumbnailUrl,
     ytContainerRef: ytPlayer.containerRef,
-    needsAudioUnlock: syncAudio && !audioUnlocked,
+    needsAudioUnlock: (audioOutput === 'everyone' || (audioOutput === 'host' && isHost)) && !audioUnlocked,
     unlockAudio,
     playSong,
     syncFailed: !canPlay && !!lastSync && provider === 'youtube' && (ytPlayer.isBlocked || !!ytPlayer.error),
