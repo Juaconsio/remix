@@ -112,14 +112,14 @@ export default function Home() {
               <>
                 <button
                   onClick={() => { setDevMode('classic'); createRoom('Dev'); }}
-                  className="font-mono-cut text-ink bg-transparent border-none cursor-pointer p-2 underline underline-offset-4"
+                  className="font-mono-cut text-ink bg-transparent border-none cursor-pointer p-2 min-h-11 underline underline-offset-4"
                   style={{ fontSize: 10, letterSpacing: '0.15em', opacity: 0.4 }}
                 >
                   ⚡ dev: youtube solo →
                 </button>
                 <button
                   onClick={() => { setDevMode('rosco'); createRoom('Dev'); }}
-                  className="font-mono-cut text-ink bg-transparent border-none cursor-pointer p-2 underline underline-offset-4"
+                  className="font-mono-cut text-ink bg-transparent border-none cursor-pointer p-2 min-h-11 underline underline-offset-4"
                   style={{ fontSize: 10, letterSpacing: '0.15em', opacity: 0.4 }}
                 >
                   ⚡ dev: rosco solo →
@@ -150,6 +150,9 @@ export default function Home() {
               onChange={(e) => setPlayerName(e.target.value)}
               placeholder="tu nombre"
               maxLength={20}
+              autoComplete="nickname"
+              autoCapitalize="words"
+              enterKeyHint="go"
               className="input-cut"
             />
             {error && (
@@ -166,7 +169,7 @@ export default function Home() {
             <button
               type="button"
               onClick={() => setMode('idle')}
-              className="font-mono-cut text-ink bg-transparent border-none cursor-pointer p-2 underline underline-offset-4"
+              className="font-mono-cut text-ink bg-transparent border-none cursor-pointer p-2 min-h-11 underline underline-offset-4"
               style={{ fontSize: 11, letterSpacing: '0.15em', opacity: 0.5 }}
             >
               ← volver
@@ -188,6 +191,9 @@ export default function Home() {
               onChange={(e) => setPlayerName(e.target.value)}
               placeholder="tu nombre"
               maxLength={20}
+              autoComplete="nickname"
+              autoCapitalize="words"
+              enterKeyHint="next"
               className="input-cut"
             />
             <input
@@ -196,6 +202,11 @@ export default function Home() {
               onChange={(e) => setJoinCode(e.target.value.toUpperCase())}
               placeholder="CÓDIGO"
               maxLength={4}
+              autoComplete="off"
+              autoCapitalize="characters"
+              autoCorrect="off"
+              spellCheck={false}
+              enterKeyHint="go"
               className="input-cut font-mono-cut text-center"
               style={{ fontStyle: 'normal', letterSpacing: '0.3em', fontSize: 22 }}
             />
@@ -217,7 +228,7 @@ export default function Home() {
             <button
               type="button"
               onClick={() => setMode('idle')}
-              className="font-mono-cut text-ink bg-transparent border-none cursor-pointer p-2 underline underline-offset-4"
+              className="font-mono-cut text-ink bg-transparent border-none cursor-pointer p-2 min-h-11 underline underline-offset-4"
               style={{ fontSize: 11, letterSpacing: '0.15em', opacity: 0.5 }}
             >
               ← volver

@@ -18,7 +18,7 @@ export function ConnectionBanner() {
           className="fixed top-0 inset-x-0 z-50 flex justify-center pointer-events-none"
         >
           <div
-            className="mt-3 flex items-center gap-2 px-4 py-2 rounded-full font-mono-cut"
+            className="mt-[max(0.75rem,env(safe-area-inset-top))] flex items-center gap-2 px-4 py-2 rounded-full font-mono-cut"
             style={{ background: '#e8341c', color: '#fff4ed', fontSize: 11 }}
           >
             <motion.span

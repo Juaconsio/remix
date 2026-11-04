@@ -178,7 +178,7 @@ export default function Lobby() {
   const signal = DEFAULT_SIGNAL;
 
   return (
-    <main className="flex flex-col px-5 pt-10 pb-8 max-w-sm mx-auto bg-bg text-ink min-h-dvh">
+    <main className="flex flex-col px-5 pt-10 max-w-sm mx-auto bg-bg text-ink min-h-dvh">
 
       <div className="flex justify-end mb-6 -mt-4">
         <SettingsTrigger />
@@ -253,17 +253,19 @@ export default function Lobby() {
       {isHost ? (
         <>
           <HostSettings config={room.config} updateConfig={updateConfig} />
-          <button
-            onClick={startGame}
-            disabled={room.players.length < 2}
-            className="btn-primary"
-          >
-            {room.players.length < 2 ? 'espera más jugadores.' : 'empezar partida.'}{' '}
-            <span>→</span>
-          </button>
+          <div className="sticky bottom-0 mt-auto -mx-5 px-5 pt-3 pb-safe bg-bg">
+            <button
+              onClick={startGame}
+              disabled={room.players.length < 2}
+              className="btn-primary"
+            >
+              {room.players.length < 2 ? 'espera más jugadores.' : 'empezar partida.'}{' '}
+              <span>→</span>
+            </button>
+          </div>
         </>
       ) : (
-        <p className="font-mono-cut text-muted text-center" style={{ fontSize: 11 }}>
+        <p className="font-mono-cut text-muted text-center pb-safe" style={{ fontSize: 11 }}>
           esperando al host…
         </p>
       )}

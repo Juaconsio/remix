@@ -11,6 +11,7 @@ export function SettingsTrigger({ color = 'var(--cut-muted)' }: SettingsTriggerP
     <button
       onClick={open}
       aria-label="ajustes"
+      className="relative z-10 before:absolute before:-inset-x-3 before:-inset-y-4 before:content-['']"
       style={{
         background: 'transparent',
         border: 'none',

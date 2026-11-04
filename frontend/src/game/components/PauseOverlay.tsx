@@ -20,7 +20,7 @@ export function PauseOverlay({ isPaused, hostName, isHost, onResume }: PauseOver
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
           transition={{ duration: prefersReduced ? 0.01 : 0.2, ease: EASE_OUT }}
-          className="fixed inset-0 z-500 flex flex-col bg-ground text-cream px-5 pt-12 pb-8"
+          className="fixed inset-0 z-500 flex flex-col bg-ground text-cream px-5 pt-12 pb-safe"
         >
           <h1 className="font-display" style={{ fontSize: 'clamp(56px, 18vw, 96px)', lineHeight: 0.9, letterSpacing: '-0.03em' }}>
             pausa.

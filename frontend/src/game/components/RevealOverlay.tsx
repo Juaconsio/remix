@@ -74,9 +74,10 @@ export function RevealOverlay({
             background: '#0e0e0e',
             display: 'flex',
             flexDirection: 'column',
-            justifyContent: 'center',
-            padding: '0 28px',
-            overflow: 'hidden',
+            padding: '32px 28px 0',
+            overflowX: 'hidden',
+            overflowY: 'auto',
+            overscrollBehavior: 'contain',
           }}
         >
           {/* Year — huge */}
@@ -84,7 +85,7 @@ export function RevealOverlay({
             initial={prefersReduced ? false : { x: '110vw' }}
             animate={{ x: 0 }}
             transition={prefersReduced ? { duration: 0 } : { ...SLIDE, delay: 0.05 }}
-            style={{ marginBottom: 8 }}
+            style={{ marginTop: 'auto', marginBottom: 8 }}
           >
             <p
               style={{
@@ -232,7 +233,8 @@ export function RevealOverlay({
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={prefersReduced ? { duration: 0 } : { duration: 0.3, delay: 1.1 }}
-            style={{ position: 'absolute', left: 20, right: 20, bottom: 32, display: 'flex', flexDirection: 'column', gap: 10 }}
+            className="pb-safe"
+            style={{ marginTop: 'auto', marginInline: -8, paddingTop: 28, display: 'flex', flexDirection: 'column', gap: 10 }}
           >
             {tokenAward && (
               tokenAward.awarded ? (

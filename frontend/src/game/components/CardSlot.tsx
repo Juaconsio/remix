@@ -4,6 +4,9 @@ import type { Song } from '../../types/game';
 import type { SongSignal } from '../../utils/songColor';
 import { CutWaveform } from './CutWaveform';
 
+const TURN_UI_HEIGHT = '24rem';
+const CARD_WIDTH = `clamp(10rem, calc((100dvh - ${TURN_UI_HEIGHT}) * 3 / 4), 17.5rem)`;
+
 interface CardSlotProps {
   song: Song | null;
   isRevealed: boolean;
@@ -180,7 +183,7 @@ export function CardSlot({
       className="flex justify-center px-5 pt-5 pb-3"
       style={{ '--song-primary': primary, '--song-on-primary': onPrimary } as React.CSSProperties}
     >
-      <div className="relative w-full max-w-70" style={{ aspectRatio: '3/4' }}>
+      <div className="relative" style={{ aspectRatio: '3/4', width: CARD_WIDTH }}>
         <AnimatePresence mode="wait">
           {!isRevealed ? (
             /* Hidden face — always dark card back */
