@@ -1,5 +1,4 @@
 import { CutWaveform } from './CutWaveform';
-import type { SongSignal } from '../../utils/songColor';
 
 interface YouTubePlayerProps {
   isPlaying: boolean;
@@ -7,7 +6,6 @@ interface YouTubePlayerProps {
   progress: number; // 0–100
   hookDuration: number;
   error: string | null;
-  signal?: SongSignal;
   onPlay: () => void;
   onStop: () => void;
 }
@@ -25,12 +23,11 @@ export function YouTubePlayer({
   progress,
   hookDuration,
   error,
-  signal,
   onPlay,
   onStop,
 }: YouTubePlayerProps) {
-  const primary   = signal?.primary   ?? '#ff5722';
-  const onPrimary = signal?.onPrimary ?? '#fff4ed';
+  const primary   = '#e8341c';
+  const onPrimary = '#0e0e0e';
 
   const finished  = !isPlaying && !isLoading && progress >= 100;
   const elapsed   = Math.round((progress / 100) * hookDuration);

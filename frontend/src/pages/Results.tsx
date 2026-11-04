@@ -2,7 +2,12 @@ import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, useReducedMotion } from 'framer-motion';
 import { useSocket } from '../hooks/useSocket';
-import { SIGNAL_STRIPE, DEFAULT_SIGNAL, avatarColors } from '../utils/songColor';
+import { SIGNAL_ACCENT } from '../utils/songColor';
+import { EASE_OUT } from '../utils/motion';
+import { cn } from '../utils/cn';
+import { Vinyl } from '../game/components/Vinyl';
+
+const LONG_NAME = 9;
 
 function listNames(names: string[]): string {
   return names.length < 2 ? names.join('') : `${names.slice(0, -1).join(', ')} y ${names[names.length - 1]}`;
@@ -27,129 +32,57 @@ export default function Results() {
   const tiedForFirst = ranked.filter((p) => p.score === winner.score);
   const isTie = tiedForFirst.length > 1;
   const points = `${winner.score} ${winner.score === 1 ? 'punto' : 'puntos'}`;
-
-  const winnerSignal = DEFAULT_SIGNAL;
-  const { primary, onPrimary } = winnerSignal;
+  const leave = () => { leaveRoom(); navigate('/'); };
 
   return (
-    <main
-      className="relative min-h-dvh max-w-107.5 mx-auto bg-song-primary overflow-hidden flex flex-col"
-      style={{ '--song-primary': primary, '--song-on-primary': onPrimary } as React.CSSProperties}
-    >
-      {/* Diagonal ink */}
-      <div className="cut-diagonal" />
+    <main className="relative min-h-dvh max-w-107.5 mx-auto flex flex-col overflow-hidden bg-ground text-cream px-5 pt-10 pb-safe">
+      <div className="absolute -right-20 top-4 w-56" aria-hidden="true">
+        <Vinyl accent={SIGNAL_ACCENT} spinning>
+          <span className="etiqueta-anio">{winner.score}</span>
+        </Vinyl>
+      </div>
 
-      <div className="relative z-2 flex-1 flex flex-col px-5 pt-12 pb-safe">
+      <motion.div
+        initial={prefersReduced ? false : { opacity: 0, y: 24 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.6, ease: EASE_OUT }}
+        className="relative mb-8 pr-16"
+      >
+        <p className="font-label opacity-70 mb-2">resultado final</p>
+        <h1 className="font-display" style={{ fontSize: isTie || winner.name.length <= LONG_NAME ? 56 : 40, lineHeight: 0.95 }}>
+          {isTie ? 'empate.' : `${winner.name}.`}
+        </h1>
+        <p className="font-display mt-3" style={{ fontSize: 20, fontWeight: 700, lineHeight: 1.15 }}>
+          {isTie ? `${listNames(tiedForFirst.map((p) => p.name))} con ${points}.` : `gana con ${points}.`}
+        </p>
+      </motion.div>
 
-        {/* Winner announcement */}
-        <motion.div
-          initial={prefersReduced ? false : { opacity: 0, y: 24 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.7, ease: [0.34, 1.56, 0.64, 1] }}
-          className="mb-8 text-left"
-        >
-          <p className="font-mono-cut text-song-on-primary mb-1.5" style={{ fontSize: 11, opacity: 0.75 }}>
-            resultado final
-          </p>
-          <h1
-            className="font-display text-song-on-primary mb-2"
-            style={{ fontSize: 52, letterSpacing: -3, lineHeight: 0.9 }}
-          >
-            {isTie ? 'empate.' : `${winner.name}.`}
-          </h1>
-          <p
-            className="font-serif-accent text-song-on-primary"
-            style={{ fontSize: 20, opacity: 0.75 }}
-          >
-            {isTie
-              ? `${listNames(tiedForFirst.map((p) => p.name))} con ${points}.`
-              : `gana con ${points}.`}
-          </p>
-        </motion.div>
+      <ol className="relative flex flex-col gap-1 flex-1">
+        {ranked.map((player, i) => {
+          const isWinner = player.score === winner.score;
+          return (
+            <motion.li
+              key={player.id}
+              initial={prefersReduced ? false : { opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: 0.15 + i * 0.07, duration: 0.4, ease: EASE_OUT }}
+              className={cn('flex items-center gap-3 px-4 min-h-15', isWinner ? 'bg-cream text-ground' : 'bg-tono-1 text-cream')}
+            >
+              <span className="font-year w-6 opacity-60" style={{ fontSize: 18 }}>{i + 1}</span>
+              <span className="flex-1 font-display truncate" style={{ fontSize: 21 }}>{player.name}</span>
+              <span className="font-year" style={{ fontSize: 28 }}>{player.score}</span>
+            </motion.li>
+          );
+        })}
+      </ol>
 
-        {/* Signal stripe */}
-        <div className="flex h-1.5 rounded-full overflow-hidden mb-6">
-          {SIGNAL_STRIPE.map((c) => (
-            <div key={c} style={{ flex: 1, background: c }} />
-          ))}
-        </div>
-
-        {/* Ranking */}
-        <div className="flex flex-col gap-2 flex-1">
-          {ranked.map((player, i) => {
-            const avatar = avatarColors(i);
-            const isWinner = player.score === winner.score;
-
-            return (
-              <motion.div
-                key={player.id}
-                initial={prefersReduced ? false : { opacity: 0, x: -20 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: i * 0.07, duration: 0.5, ease: 'easeOut' }}
-                className="flex items-center gap-3 px-4 py-3 rounded-full"
-                style={{
-                  background: isWinner ? '#fff4ed' : 'transparent',
-                  border: isWinner ? 'none' : '1.5px solid rgba(255,244,237,0.35)',
-                  color: isWinner ? '#0e0e0e' : '#fff4ed',
-                }}
-              >
-                {/* Avatar */}
-                <div
-                  className="w-9 h-9 rounded-full shrink-0 flex items-center justify-center font-display"
-                  style={{ background: avatar.bg, color: avatar.fg, fontSize: 18 }}
-                >
-                  {player.name[0].toLowerCase()}
-                </div>
-
-                {/* Rank */}
-                <span className="font-mono-cut w-5" style={{ fontSize: 11, opacity: 0.5 }}>
-                  {i + 1}
-                </span>
-
-                {/* Name */}
-                <span
-                  className="flex-1 font-display overflow-hidden text-ellipsis whitespace-nowrap"
-                  style={{ fontStyle: 'italic', fontWeight: 700, fontSize: 18, letterSpacing: -0.3 }}
-                >
-                  {player.name}
-                </span>
-
-                {/* Score */}
-                <span
-                  className="font-display"
-                  style={{
-                    fontSize: 22,
-                    letterSpacing: -1,
-                    color: isWinner ? primary : '#fff4ed',
-                  }}
-                >
-                  {player.score}
-                </span>
-              </motion.div>
-            );
-          })}
-        </div>
-
+      <div className="relative flex flex-col gap-2 mt-8">
         {room.hostId === myPlayerId ? (
-          <div className="flex flex-col gap-[10px] mt-8">
-            <button onClick={returnToLobby} className="btn-game">
-              <span>otra con esta mesa.</span>
-              <span>→</span>
-            </button>
-            <button onClick={() => { leaveRoom(); navigate('/'); }} className="btn-secondary btn-secondary-light">
-              salir
-            </button>
-          </div>
+          <button onClick={returnToLobby} className="btn btn-signal">otra con esta mesa.</button>
         ) : (
-          <div className="flex flex-col gap-[10px] mt-8">
-            <p className="font-mono-cut text-center text-song-on-primary" style={{ fontSize: 11, opacity: 0.75 }}>
-              si el host arma otra, entras directo.
-            </p>
-            <button onClick={() => { leaveRoom(); navigate('/'); }} className="btn-secondary btn-secondary-light">
-              salir
-            </button>
-          </div>
+          <p className="font-label opacity-70">si el host arma otra, entras directo.</p>
         )}
+        <button onClick={leave} className="btn btn-tone btn-small">salir</button>
       </div>
     </main>
   );

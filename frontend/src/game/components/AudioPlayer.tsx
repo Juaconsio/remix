@@ -1,12 +1,10 @@
 import { CutWaveform } from './CutWaveform';
-import type { SongSignal } from '../../utils/songColor';
 
 interface AudioPlayerProps {
   isPlaying: boolean;
   isLoading: boolean;
   progress: number; // 0–100
   error: string | null;
-  signal?: SongSignal;
   onPlay: () => void;
   onStop: () => void;
 }
@@ -23,12 +21,11 @@ export function AudioPlayer({
   isLoading,
   progress,
   error,
-  signal,
   onPlay,
   onStop,
 }: AudioPlayerProps) {
-  const primary   = signal?.primary   ?? '#ff5722';
-  const onPrimary = signal?.onPrimary ?? '#fff4ed';
+  const primary   = '#e8341c';
+  const onPrimary = '#0e0e0e';
 
   const elapsed = Math.round((progress / 100) * 30);
   const total   = 30;

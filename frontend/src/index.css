@@ -1,12 +1,9 @@
 @import "tailwindcss";
 
-/* Tie the dark: variant to [data-theme="dark"].
-   :is() gives specificity (0,1,0), so dark: utilities win over same-weight classes. */
+/* :is() gives specificity (0,1,0), so dark: utilities win over same-weight classes. */
 @variant dark (&:is([data-theme="dark"] *));
 
-/* ── Layer 2: Static tokens — NO inline, generate Tailwind utilities ── */
 @theme {
-  /* Theme-aware tokens — cascade resolves these via :root / [data-theme="dark"] */
   --color-ink:     var(--cut-ink);
   --color-surface: var(--cut-surface);
   --color-bg:      var(--cut-bg);
@@ -14,236 +11,345 @@
   --color-muted:   var(--cut-muted);
   --color-tint:    var(--cut-tint);
 
-  /* Static signal colors — fixed values, same in both themes */
-  --color-signal-rojo:      #e8341c;
-  --color-signal-naranja:   #ff5722;
-  --color-signal-magenta:   #ff2d8f;
-  --color-signal-cobalto:   #2540d6;
-  --color-signal-menta:     #2cd9b8;
-  --color-signal-lavanda:   #a78bfa;
-  --color-signal-tangerine: #ff6d00;
+  --color-ground:     #0e0e0e;
+  --color-cream:      #fff4ed;
+  --color-tono-1:     #1b1b1b;
+  --color-tono-2:     #2a2a2a;
+  --color-tono-crema: #f0e3da;
+  --color-signal:     #e8341c;
 
-  /* Status */
   --color-success: #2cd9b8;
   --color-error:   #e8341c;
-  --color-accent:  #ff5722;
+  --color-accent:  #e8341c;
 
-  /* Fixed neutrals — never invert with theme */
-  --color-ground: #0e0e0e;   /* always the deepest dark; diagonal, fixed-ink elements */
-  --color-cream:  #fff4ed;   /* always the warm light; buttons on dark diagonal */
-
-  /* Typography */
-  --font-display: var(--cut-font-display);
+  --font-display: 'Figtree', sans-serif;
   --font-mono:    'Space Mono', monospace;
-  --font-serif:   'Instrument Serif', serif;
+
+  --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
 }
 
-/* ── Layer 3: Runtime song signal tokens — inline REQUIRED ── */
-/* These are injected via style prop at runtime; Tailwind cannot resolve them at build time */
-@theme inline {
-  --color-song-primary:    var(--song-primary);
-  --color-song-surface:    var(--song-surface);
-  --color-song-on-primary: var(--song-on-primary);
-}
-
-/* ── Layer 1: Runtime CSS custom properties ─────────────────────── */
 :root {
-  --cut-font-display: 'Figtree', sans-serif;
-  --cut-font-display-weight: 900;
-  --cut-ease-out: cubic-bezier(0.23, 1, 0.32, 1);
-
   --cut-ink:     #0e0e0e;
-  --cut-surface: #fff4ed;
+  --cut-surface: #f0e3da;
   --cut-bg:      #fff4ed;
   --cut-border:  rgba(14,14,14,0.18);
-  --cut-muted:   rgba(14,14,14,0.5);
-  --cut-tint:    rgba(14,14,14,0.05);
-
-  /* Song signal defaults — overridden inline per song component */
-  --song-primary:    #ff5722;
-  --song-surface:    #fff4ed;
-  --song-on-primary: #fff4ed;
+  --cut-muted:   rgba(14,14,14,0.55);
+  --cut-tint:    rgba(14,14,14,0.06);
 }
 
 [data-theme="dark"] {
   --cut-ink:     #fff4ed;
-  --cut-surface: #1a1a1a;
+  --cut-surface: #1b1b1b;
   --cut-bg:      #0e0e0e;
   --cut-border:  rgba(255,244,237,0.18);
-  --cut-muted:   rgba(255,244,237,0.5);
-  --cut-tint:    rgba(255,244,237,0.05);
+  --cut-muted:   rgba(255,244,237,0.55);
+  --cut-tint:    rgba(255,244,237,0.06);
 }
 
-/* OS-level dark fallback — only when user hasn't set a preference */
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
     --cut-ink:     #fff4ed;
-    --cut-surface: #1a1a1a;
+    --cut-surface: #1b1b1b;
     --cut-bg:      #0e0e0e;
     --cut-border:  rgba(255,244,237,0.18);
-    --cut-muted:   rgba(255,244,237,0.5);
-    --cut-tint:    rgba(255,244,237,0.05);
+    --cut-muted:   rgba(255,244,237,0.55);
+    --cut-tint:    rgba(255,244,237,0.06);
   }
 }
 
-/* ── Global reset ───────────────────────────────────────────────── */
-html, body {
-  background: var(--cut-bg);
-  color: var(--cut-ink);
-  min-height: 100%;
-  -webkit-font-smoothing: antialiased;
-  overscroll-behavior: none;
-}
+@layer base {
+  html, body {
+    background: var(--cut-bg);
+    color: var(--cut-ink);
+    min-height: 100%;
+    -webkit-font-smoothing: antialiased;
+    overscroll-behavior: none;
+  }
 
-html {
-  -webkit-text-size-adjust: 100%;
-}
+  html {
+    -webkit-text-size-adjust: 100%;
+  }
 
-* {
-  -webkit-tap-highlight-color: transparent;
-  box-sizing: border-box;
-}
+  body {
+    font-family: var(--font-display);
+    font-style: italic;
+  }
 
-button, a, [role="button"] {
-  touch-action: manipulation;
-  user-select: none;
-  -webkit-user-select: none;
-  -webkit-touch-callout: none;
+  * {
+    -webkit-tap-highlight-color: transparent;
+    box-sizing: border-box;
+  }
+
+  *, *::before, *::after {
+    transition: background-color 150ms ease, border-color 150ms ease, color 150ms ease;
+  }
+
+  button, a, [role="button"] {
+    touch-action: manipulation;
+    user-select: none;
+    -webkit-user-select: none;
+    -webkit-touch-callout: none;
+  }
+
+  p { text-wrap: pretty; }
 }
 
 @utility pb-safe {
   padding-bottom: max(2rem, calc(env(safe-area-inset-bottom, 0px) + 1rem));
 }
 
-/* ── Global theme transition — declared once, never per component ── */
-*, *::before, *::after {
-  transition: background-color 150ms ease, border-color 150ms ease, color 150ms ease;
+@layer components {
+.font-display {
+  font-family: var(--font-display);
+  font-weight: 900;
+  font-style: italic;
+  letter-spacing: -0.03em;
 }
 
-/* ── Cut typography utilities ───────────────────────────────────── */
-.font-display {
-  font-family: var(--cut-font-display);
-  font-weight: var(--cut-font-display-weight);
+.font-label {
+  font-family: var(--font-display);
+  font-weight: 700;
   font-style: italic;
+  font-size: 15px;
+  line-height: 1.2;
+}
+
+.font-year {
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-style: normal;
+  letter-spacing: -0.06em;
 }
 
 .font-mono-cut {
-  font-family: 'Space Mono', monospace;
+  font-family: var(--font-mono);
   font-weight: 700;
+  font-style: normal;
   text-transform: uppercase;
   letter-spacing: 0.1em;
 }
 
-.font-serif-accent {
-  font-family: 'Instrument Serif', serif;
-  font-style: italic;
-}
-
-/* ── Cut button primitives ──────────────────────────────────────── */
-.btn-primary {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  width: 100%;
-  padding: 18px 22px;
-  background: var(--cut-surface);
-  color: var(--cut-ink);
-  border: none;
-  border-radius: 999px;
-  box-shadow: 0 0 0 1.5px var(--cut-ink);
-  font-family: var(--cut-font-display);
-  font-weight: var(--cut-font-display-weight);
-  font-style: italic;
-  font-size: 20px;
-  letter-spacing: -0.3px;
-  cursor: pointer;
-  transition: transform 160ms var(--cut-ease-out), opacity 120ms;
-}
-
-.btn-primary:disabled { opacity: 0.35; }
-.btn-primary:active:not(:disabled) { opacity: 0.75; transform: scale(0.97); }
-
-.btn-secondary {
+.btn {
   display: flex;
   align-items: center;
   justify-content: center;
+  gap: 10px;
   width: 100%;
-  padding: 13px 22px;
-  background: transparent;
-  color: var(--cut-ink);
-  border: 2.5px solid var(--cut-ink);
-  border-radius: 999px;
-  font-family: 'Space Mono', monospace;
-  font-weight: 700;
-  font-size: 11px;
-  letter-spacing: 0.18em;
-  text-transform: uppercase;
+  min-height: 60px;
+  padding: 0 16px;
+  border: none;
+  border-radius: 0;
+  font-family: var(--font-display);
+  font-weight: 900;
+  font-style: italic;
+  font-size: 20px;
+  letter-spacing: -0.02em;
+  line-height: 1;
+  text-align: center;
   cursor: pointer;
-  transition: transform 160ms var(--cut-ease-out), opacity 120ms;
+  transition: transform 140ms var(--ease-out), background-color 120ms, opacity 120ms;
 }
 
-.btn-secondary:disabled { opacity: 0.35; }
-.btn-secondary:active:not(:disabled) { opacity: 0.75; transform: scale(0.97); }
+.btn:active:not(:disabled) { transform: scale(0.97); }
+.btn:disabled { cursor: default; }
 
-/* Secondary on dark (ink) backgrounds */
-.btn-secondary-light {
-  border-color: var(--cut-surface);
-  color: var(--cut-surface);
+.btn-signal { background: var(--color-signal); color: var(--color-ground); }
+.btn-signal:disabled { background: var(--color-tono-2); color: var(--color-cream); opacity: 0.7; }
+.btn-cream { background: var(--color-cream); color: var(--color-ground); }
+.btn-tone { background: var(--color-tono-2); color: var(--color-cream); }
+.btn-cream:disabled, .btn-tone:disabled { opacity: 0.35; }
+.btn-ink { background: var(--cut-ink); color: var(--cut-bg); }
+.btn-ink:disabled { opacity: 0.35; }
+.btn-small { min-height: 48px; font-size: 17px; }
+
+@media (hover: hover) and (pointer: fine) {
+  .btn:not(:disabled):hover { opacity: 0.86; }
 }
 
-/* ── Cut input ──────────────────────────────────────────────────── */
 .input-cut {
   width: 100%;
-  padding: 14px 20px;
-  background: transparent;
-  border: 1.5px solid var(--cut-border);
-  border-radius: 999px;
+  min-height: 60px;
+  padding: 0 18px;
+  background: var(--cut-tint);
+  border: 2px solid var(--cut-border);
+  border-radius: 0;
   color: var(--cut-ink);
-  font-family: var(--cut-font-display);
+  font-family: var(--font-display);
+  font-weight: 900;
   font-style: italic;
-  font-size: 16px;
+  font-size: 20px;
+  letter-spacing: -0.02em;
   outline: none;
 }
 
-.input-cut::placeholder { opacity: 0.45; }
-.input-cut:focus        { border-color: var(--cut-ink); border-width: 2px; }
+.input-cut::placeholder { color: var(--cut-muted); opacity: 1; }
+.input-cut:focus        { border-color: var(--cut-ink); }
 
+.vinilo-marco { container-type: inline-size; display: block; }
+.vinilo { position: relative; display: block; width: 100%; aspect-ratio: 1; }
+.surcos { display: block; width: 100%; height: 100%; }
+.etiqueta {
+  position: absolute;
+  inset: 31%;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--etiqueta, var(--color-cream));
+  color: var(--tinta-etiqueta, var(--color-ground));
+  font-weight: 900;
+  font-size: 9cqw;
+  letter-spacing: -0.03em;
+  line-height: 1;
+  transition: background-color 280ms;
+}
+.etiqueta-anio { font-family: var(--font-mono); font-style: normal; font-size: 13cqw; letter-spacing: -0.05em; }
 
-/* ── Game CTA button — always cream on dark diagonal ────────────── */
-/* Intentionally theme-invariant: sits on the always-dark .cut-diagonal */
-.btn-game {
+.cv-marco { container-type: size; }
+.cv-caja {
+  --labio: 44px;
+  --apoyo: calc(var(--labio) + 60px);
+  --lado: min(68cqw, calc(100cqh - var(--apoyo) - 70px));
+  position: relative;
+  height: 100cqh;
+  overflow: hidden;
+  perspective: 620px;
+  perspective-origin: 50% -30%;
+  touch-action: pan-y;
+  user-select: none;
+  -webkit-user-select: none;
+  background: var(--color-tono-1) url('/landing/fotos/feria.jpg') center / cover;
+  background-blend-mode: multiply;
+  color: var(--color-cream);
+}
+.cv-caja:focus-visible { outline: 3px solid var(--color-cream); outline-offset: -4px; }
+.cv-hojeable { touch-action: none; cursor: grab; }
+.cv-arrastrando { cursor: grabbing; }
+
+.cv-escena { position: absolute; inset: 0; transform-style: preserve-3d; }
+
+.cv-funda, .cv-separador {
+  position: absolute;
+  left: 50%;
+  bottom: var(--apoyo);
+  width: var(--lado);
+  aspect-ratio: 1;
+  transform-origin: 50% 100%;
+  transform-style: preserve-3d;
+  transition: transform 320ms var(--ease-out), opacity 200ms;
+}
+.cv-arrastrando .cv-funda, .cv-arrastrando .cv-separador { transition: none; }
+
+.cv-cara { position: absolute; inset: 0; backface-visibility: hidden; -webkit-backface-visibility: hidden; }
+.cv-frente {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  padding: 8px 14px 12px;
+  background: var(--color-cream);
+  color: var(--color-ground);
+  outline: 1px solid rgb(14 14 14 / 0.3);
+  outline-offset: -1px;
+}
+.cv-funda:nth-child(even) .cv-frente { background: var(--color-tono-2); color: var(--color-cream); outline-color: rgb(255 244 237 / 0.16); }
+.cv-dorso {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 12px 14px;
+  background: var(--color-tono-crema);
+  color: var(--color-ground);
+  outline: 1px solid rgb(14 14 14 / 0.3);
+  outline-offset: -1px;
+  transform: rotateX(180deg);
+}
+.cv-funda:nth-child(even) .cv-dorso { background: var(--color-tono-1); color: var(--color-cream); outline-color: rgb(255 244 237 / 0.16); }
+
+.cv-anio { font-family: var(--font-mono); font-style: normal; font-weight: 700; font-size: 30px; line-height: 1; letter-spacing: -0.06em; }
+.cv-titulo { margin-top: 6px; font-weight: 900; font-size: 19px; line-height: 1.02; letter-spacing: -0.03em; }
+.cv-artista { margin-top: 3px; font-weight: 700; font-size: 15px; line-height: 1.1; }
+.cv-sello { position: absolute; right: -14%; bottom: -22%; width: 72%; aspect-ratio: 1; border-radius: 50%; background: var(--color-ground); }
+.cv-sello::after { content: ''; position: absolute; inset: 33%; border-radius: 50%; background: var(--color-tono-2); transition: background-color 220ms; }
+.cv-a-la-vista .cv-sello::after { background: var(--etiqueta); }
+
+.cv-separador { pointer-events: none; }
+.cv-pestana {
+  position: absolute;
+  left: 12px;
+  top: -30px;
+  min-width: 44px;
+  padding: 7px 12px 8px;
+  background: var(--color-signal);
+  color: var(--color-ground);
+  font-weight: 900;
+  font-size: 15px;
+  line-height: 1;
+  text-align: center;
+}
+.cv-pestana-derecha { left: auto; right: 12px; }
+
+.cv-disco {
+  position: absolute;
+  left: 50%;
+  bottom: var(--apoyo);
+  width: calc(var(--lado) * 0.92);
+  padding: 0;
+  border: none;
+  background: none;
+  border-radius: 50%;
+  transform-origin: 50% 100%;
+  transition: transform 480ms var(--ease-out), opacity 200ms;
+}
+.cv-disco[data-estado='asomado'] { transform: translate3d(-50%, -21%, -12px) rotateX(7deg); }
+.cv-disco[data-estado='mano'] { transform: translate3d(calc(-50% + var(--lado) * 0.42), -92%, 60px) rotateX(7deg) scale(0.42); }
+.cv-disco[data-estado='fuera'] { transform: translate3d(-50%, -40%, 44px) rotateX(7deg); }
+.cv-disco:disabled { cursor: default; }
+
+.cv-pista {
+  position: absolute;
+  z-index: 2;
+  left: 50%;
+  bottom: calc(var(--labio) + 12px);
+  padding: 5px 10px;
+  background: var(--color-ground);
+  color: var(--color-cream);
+  font-size: 15px;
+  font-weight: 700;
+  line-height: 1.2;
+  white-space: nowrap;
+  pointer-events: none;
+  opacity: 0;
+  transform: translateX(-50%);
+  transition: opacity 240ms;
+}
+.cv-pista.cv-visible { opacity: 0.86; }
+
+.cv-labio {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: var(--labio);
   display: flex;
   align-items: center;
   justify-content: space-between;
-  width: 100%;
-  padding: 18px 22px;
+  gap: 12px;
+  padding: 0 20px;
   background: var(--color-cream);
   color: var(--color-ground);
-  border: none;
-  border-radius: 999px;
-  box-shadow: 0 0 0 1.5px var(--color-ground);
-  font-family: var(--cut-font-display);
-  font-weight: var(--cut-font-display-weight);
-  font-style: italic;
-  font-size: 20px;
-  letter-spacing: -0.3px;
-  cursor: pointer;
-  transition: transform 160ms var(--cut-ease-out), opacity 120ms;
+  font-weight: 900;
+  font-size: 18px;
+  letter-spacing: -0.02em;
+}
+.cv-labio > span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.cv-nota { flex-shrink: 0; font-weight: 700; font-size: 15px; opacity: 0.7; }
 }
 
-.btn-game:disabled { opacity: 0.35; cursor: default; }
-.btn-game:active:not(:disabled) { opacity: 0.75; transform: scale(0.97); }
+@keyframes vuelta { to { rotate: 360deg; } }
 
-.cut-diagonal {
-  position: absolute;
-  inset: 0;
-  z-index: 1;
-  pointer-events: none;
-  background: var(--color-ground);
-  clip-path: polygon(0 56%, 100% 42%, 100% 100%, 0 100%);
+@media (prefers-reduced-motion: no-preference) {
+  .vinilo[data-gira] .surcos { animation: vuelta 1.8s linear infinite; }
 }
 
-/* ── prefers-reduced-motion ─────────────────────────────────────── */
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {
     animation-duration: 0.01ms !important;
@@ -252,7 +358,5 @@ button, a, [role="button"] {
     scroll-behavior: auto !important;
   }
 
-  .btn-primary:active:not(:disabled),
-  .btn-secondary:active:not(:disabled),
-  .btn-game:active:not(:disabled) { transform: none; }
+  .btn:active:not(:disabled) { transform: none; }
 }

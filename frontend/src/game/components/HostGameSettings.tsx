@@ -17,18 +17,14 @@ function Row({ title, description, isSelected = false, disabled = false, onClick
     <button
       onClick={onClick}
       disabled={disabled}
+      aria-pressed={isSelected}
       className={cn(
-        'w-full text-left px-4 py-3 rounded-[14px] transition-[opacity,transform] duration-150 ease-[cubic-bezier(0.23,1,0.32,1)] enabled:active:scale-[0.97] motion-reduce:enabled:active:scale-100 disabled:opacity-40',
-        isSelected ? 'bg-tint' : 'bg-transparent',
+        'w-full text-left px-4 py-3 min-h-15 transition-[opacity,transform] duration-150 ease-out enabled:active:scale-[0.97] motion-reduce:enabled:active:scale-100 disabled:opacity-40',
+        isSelected ? 'bg-ink text-bg' : 'bg-tint text-ink',
       )}
-      style={{ border: isSelected ? '2.5px solid var(--cut-ink)' : '1.5px solid var(--cut-border)' }}
     >
-      <p className="font-display text-ink" style={{ fontWeight: 700, fontSize: 16, letterSpacing: -0.3 }}>
-        {title}
-      </p>
-      <p className="font-mono-cut text-muted mt-1" style={{ fontSize: 11, letterSpacing: '0.06em' }}>
-        {description}
-      </p>
+      <p className="font-display" style={{ fontSize: 19 }}>{title}</p>
+      <p className={cn('font-label mt-0.5', isSelected ? 'opacity-70' : 'text-muted')}>{description}</p>
     </button>
   );
 }
@@ -53,10 +49,8 @@ export function HostGameSettings({ room, onDone }: { room: Room; onDone: () => v
   };
 
   return (
-    <section className="flex flex-col gap-2 mt-8">
-      <p className="font-mono-cut text-muted mb-1" style={{ fontSize: 11 }}>
-        partida
-      </p>
+    <section className="flex flex-col gap-1 mt-6">
+      <p className="font-display mb-2" style={{ fontSize: 22 }}>partida.</p>
 
       <Row
         title="pausar."

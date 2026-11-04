@@ -22,14 +22,13 @@ export function SettingsPanel() {
     <AnimatePresence>
       {isOpen && (
         <>
-          {/* Backdrop */}
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.2 }}
             onClick={close}
-            className="fixed inset-0 z-[600] bg-black/45"
+            className="fixed inset-0 z-[600] bg-black/55"
           />
 
           <motion.div
@@ -37,42 +36,31 @@ export function SettingsPanel() {
             animate={{ y: 0 }}
             exit={{ y: '100%' }}
             transition={{ type: 'spring', damping: 32, stiffness: 340 }}
-            className="fixed bottom-0 left-0 right-0 z-[601] bg-surface rounded-t-3xl px-6 pt-5 pb-[max(3rem,calc(env(safe-area-inset-bottom)+1.5rem))] max-w-107.5 mx-auto max-h-[90dvh] overflow-y-auto overscroll-contain"
-            style={{ boxShadow: '0 -4px 32px rgba(0,0,0,0.18)' }}
+            className="fixed bottom-0 left-0 right-0 z-[601] bg-surface text-ink px-5 pt-4 pb-[max(2rem,calc(env(safe-area-inset-bottom)+1rem))] max-w-107.5 mx-auto max-h-[90dvh] overflow-y-auto overscroll-contain"
           >
-            <div className="w-10 h-1 rounded-full bg-border mx-auto mb-6" />
+            <div className="w-12 h-1.5 bg-border mx-auto mb-5" />
 
-            <p className="font-mono-cut text-muted mb-5" style={{ fontSize: 11 }}>
-              ajustes
-            </p>
+            <p className="font-display mb-4" style={{ fontSize: 26 }}>ajustes.</p>
 
-            {/* Dark/Light toggle row */}
-            <div className="flex items-center justify-between">
+            <div className="flex items-center justify-between gap-4 min-h-15 px-4 bg-tint">
               <div>
-                <p
-                  className="font-display text-ink"
-                  style={{ fontSize: 18, letterSpacing: -0.3 }}
-                >
+                <p className="font-display" style={{ fontSize: 20 }}>
                   {effectiveDark ? 'modo oscuro.' : 'modo claro.'}
                 </p>
-                {override === null && (
-                  <p className="font-mono-cut text-muted mt-1" style={{ fontSize: 11 }}>
-                    según el sistema
-                  </p>
-                )}
+                {override === null && <p className="font-label text-muted">según el sistema</p>}
               </div>
 
               <button
                 onClick={toggleTheme}
-                aria-label={effectiveDark ? 'cambiar a modo claro' : 'cambiar a modo oscuro'}
-                className="relative shrink-0 w-[52px] h-7 rounded-full border-none cursor-pointer transition-colors duration-200 before:absolute before:-inset-y-2 before:-inset-x-1 before:content-['']"
-                style={{ background: effectiveDark ? '#fff4ed' : '#0e0e0e' }}
+                role="switch"
+                aria-checked={effectiveDark}
+                aria-label="modo oscuro"
+                className="shrink-0 flex w-19 h-11 p-1 cursor-pointer bg-tono-2"
               >
-                <motion.div
-                  animate={{ x: effectiveDark ? 26 : 2 }}
+                <motion.span
+                  animate={{ x: effectiveDark ? 32 : 0 }}
                   transition={{ type: 'spring', damping: 28, stiffness: 380 }}
-                  className="absolute top-[3px] left-0 w-[22px] h-[22px] rounded-full"
-                  style={{ background: effectiveDark ? '#0e0e0e' : '#fff4ed' }}
+                  className="block w-9 h-9 bg-cream"
                 />
               </button>
             </div>
@@ -80,8 +68,7 @@ export function SettingsPanel() {
             {override !== null && (
               <button
                 onClick={() => setOverride(null)}
-                className="font-mono-cut text-muted bg-transparent border-none cursor-pointer underline underline-offset-[3px] mt-1 min-h-11 p-0"
-                style={{ fontSize: 11 }}
+                className="font-label text-muted underline underline-offset-[3px] min-h-11"
               >
                 usar preferencia del sistema
               </button>
