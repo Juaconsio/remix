@@ -31,7 +31,7 @@ const REVEAL_VERDICTS: RevealVerdict[] = [
   { title: 'Bea la robó.', detail: 'era de 1986. se va a su caja.', scored: true },
   { title: 'no era ahí.', detail: 'era de 1986. se va.', scored: false },
 ];
-const DISC_STATES: DiscState[] = ['esperando', 'mano', 'puesto', 'fuera'];
+const DISC_STATES: DiscState[] = ['esperando', 'asomado', 'mano', 'puesto', 'fuera'];
 
 function Pill({ label, active, onClick }: { label: string; active: boolean; onClick: () => void }) {
   return (
@@ -60,6 +60,7 @@ export default function Playground() {
   const [disc, setDisc] = useState<DiscState>('mano');
   const [withMarkers, setWithMarkers] = useState(false);
   const [playing, setPlaying] = useState(false);
+  const [armed, setArmed] = useState(false);
   const [reveal, setReveal] = useState<RevealVerdict | null>(null);
 
   return (
@@ -90,7 +91,7 @@ export default function Playground() {
           position={place}
           onPositionChange={setPlace}
           browsable={browsable}
-          opened={disc === 'puesto'}
+          opened={disc === 'puesto' || armed}
           title="tu caja"
           hint="desliza para hojear"
           markers={withMarkers ? [{ position: 1, label: 'A' }, { position: 4, label: 'B' }] : []}
@@ -107,8 +108,8 @@ export default function Playground() {
               spinning={playing}
               onTap={() => setPlaying((p) => !p)}
               tapLabel={playing ? 'parar' : 'escuchar'}
-              onDragIn={disc === 'mano' ? () => setDisc('puesto') : undefined}
-              onDragOut={disc === 'puesto' ? () => setDisc('mano') : undefined}
+              onDrop={disc === 'mano' ? () => setDisc('puesto') : undefined}
+              onArmedChange={setArmed}
             >
               <PlayIcon playing={playing} />
             </CrateDisc>

@@ -325,16 +325,29 @@
 .cv-disco[data-arrastrando] { transition: none; cursor: grabbing; }
 .cv-disco-arrastrable { touch-action: none; cursor: grab; }
 .cv-disco[data-estado='esperando'] {
-  transform: translate3d(calc(-50% + 100cqw), -104%, 60px) rotateX(7deg) scale(0.42) translateY(-50%) rotate(-220deg) translateY(50%);
+  transform: translate3d(calc(-50% + 100cqw), -104%, 60px) rotateX(7deg) scale(0.42) translateY(-50%) rotate(-220deg) scale(1) translateY(50%);
+}
+.cv-disco[data-estado='asomado'] {
+  transform: translate3d(calc(-50% + 50cqw), -104%, 60px) rotateX(7deg) scale(0.42) translateY(-50%) rotate(-110deg) scale(1) translateY(50%);
 }
 .cv-disco[data-estado='mano'] {
-  transform: translate3d(calc(-50% + var(--lado) * 0.42), -104%, 60px) rotateX(7deg) scale(0.42) translateY(-50%) rotate(0deg) translateY(50%);
+  transform: translate3d(calc(-50% + var(--lado) * 0.42), -104%, calc(60px + var(--acerca, 0px))) rotateX(7deg) scale(0.42) translateY(-50%) rotate(0deg) scale(var(--crece, 1)) translateY(50%);
 }
 .cv-disco[data-estado='puesto'] {
-  transform: translate3d(calc(-50% + var(--lado) * 0.36), -70%, 8px) rotateX(7deg) scale(0.75) translateY(-50%) rotate(0deg) translateY(50%);
+  transform: translate3d(calc(-50% + var(--lado) * 0.36), -70%, 8px) rotateX(7deg) scale(0.75) translateY(-50%) rotate(0deg) scale(1) translateY(50%);
 }
 .cv-disco[data-estado='fuera'] {
-  transform: translate3d(-50%, -40%, 44px) rotateX(7deg) scale(1) translateY(-50%) rotate(0deg) translateY(50%);
+  transform: translate3d(-50%, -40%, 44px) rotateX(7deg) scale(1) translateY(-50%) rotate(0deg) scale(1) translateY(50%);
+}
+.cv-disco[data-armado] .vinilo { filter: drop-shadow(0 0 14px rgb(232 52 28 / 0.75)); }
+
+.cv-a-la-vista .cv-frente .cv-anio,
+.cv-delante .cv-dorso .cv-anio {
+  align-self: flex-start;
+  padding: 3px 7px 4px;
+  background: var(--color-signal);
+  color: var(--color-ground);
+  font-size: clamp(26px, calc(var(--lado) * 0.155), 38px);
 }
 .cv-disco:disabled { cursor: default; }
 .cv-dorso .cv-anio { font-size: 34px; }
@@ -365,6 +378,26 @@
 }
 .cv-pista.cv-visible { opacity: 0.86; }
 
+.cv-aviso {
+  position: absolute;
+  z-index: 2;
+  top: 12px;
+  left: 16px;
+  padding: 6px 12px 7px;
+  background: var(--color-signal);
+  color: var(--color-ground);
+  font-weight: 900;
+  font-size: 26px;
+  line-height: 1;
+  letter-spacing: -0.03em;
+  white-space: nowrap;
+  pointer-events: none;
+  opacity: 0;
+  transform: translateY(-6px);
+  transition: opacity 160ms, transform 220ms var(--ease-out);
+}
+.cv-aviso.cv-visible { opacity: 1; transform: none; }
+
 .cv-labio {
   position: absolute;
   left: 0;
@@ -388,8 +421,11 @@
 
 @keyframes vuelta { to { rotate: 360deg; } }
 
+@keyframes llama { 0%, 70%, 100% { scale: 1; } 80% { scale: 1.08; } 90% { scale: 0.98; } }
+
 @media (prefers-reduced-motion: no-preference) {
   .vinilo[data-gira] .surcos { animation: vuelta 1.8s linear infinite; }
+  .cv-disco[data-estado='asomado'] .vinilo { animation: llama 2.2s var(--ease-out) infinite; }
 }
 
 @media (prefers-reduced-motion: reduce) {

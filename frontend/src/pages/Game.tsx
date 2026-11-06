@@ -71,6 +71,7 @@ export default function Game() {
   const [stealBrowse, setStealBrowse] = useState<Browse | null>(null);
   const crateButtons = useControlsStore((s) => s.crateButtons);
   const [closedRevealId, setClosedRevealId] = useState<string | null>(null);
+  const [dropArmed, setDropArmed] = useState(false);
 
   useEffect(() => {
     if (!room) { navigate('/'); return; }
@@ -119,8 +120,8 @@ export default function Game() {
     ? room.selectedPosition ?? restingPlace
     : timeline.filter((song) => song.year < card.year).length;
 
-  const isPlaced = room.status === 'round_active' && room.selectedPosition !== null;
-  const isBrowsingMine = isChoosing && !isPlaced;
+  const discInCrate = room.selectedPosition !== null && (room.status === 'round_active' || (isStealing && !canSteal));
+  const isBrowsingMine = isChoosing && room.selectedPosition === null;
 
   const cratePosition = isRevealed ? revealedPlace : canSteal ? stealPlace : isBrowsingMine ? myPlace : restingPlace;
 
@@ -128,31 +129,28 @@ export default function Game() {
   const browseSteal = (place: number) => setStealBrowse({ cardId, place: clampPlace(place) });
   const browseTo = canSteal ? browseSteal : isBrowsingMine ? browseMine : undefined;
 
-  const putHere = () => selectPosition(myPlace);
-  const takeOut = () => {
-    if (room.selectedPosition !== null) browseMine(room.selectedPosition);
-    selectPosition(null);
-  };
-
   const isHost     = room.hostId === myPlayerId;
   const isLastTurn = room.deck.length === 0 || room.players.some((p) => p.score >= WIN_SCORE);
 
+  const canDraw = room.status === 'setup' && isActivePlayer && !room.paused && !room.pregameReadyIds;
   const drawAndPlay = () => {
     const nextCard = room.deck[0];
     flipCard();
     if (nextCard) playSong(nextCard);
   };
 
-  const confirmPlace = () => {
+  const canControlDisc = isBrowsingMine && !missingYouTubeVideo && !displayError;
+  const canDrop = isBrowsingMine && canListen;
+  const dropHere = () => {
     activePlayer.stop();
+    selectPosition(myPlace);
     placeCard();
   };
-  const handleCrateEnter = isBrowsingMine ? putHere : isChoosing && canListen ? confirmPlace : undefined;
+  const handleCrateEnter = canDrop ? dropHere : undefined;
 
-  const canControlDisc = isChoosing && !missingYouTubeVideo && !displayError;
   const togglePlay = canControlDisc ? (activePlayer.isPlaying ? activePlayer.stop : activePlayer.play) : undefined;
   const playLabel = activePlayer.isPlaying ? 'parar la canción' : 'escuchar la canción';
-  const discLabel = isChoosing ? <PlayIcon playing={activePlayer.isPlaying} /> : '¿?';
+  const discLabel = isBrowsingMine ? <PlayIcon playing={activePlayer.isPlaying} /> : '¿?';
 
   const stealWinnerName = nameOf(room.stealWinnerId);
 
@@ -166,7 +164,7 @@ export default function Game() {
     ? `${isActivePlayer ? '¿te la roban?' : canSteal ? '¿la robas?' : 'robando…'} ${secondsLeft}s`
     : room.status === 'round_active'
     ? isActivePlayer ? '¿de qué año es?' : 'escucha y piensa.'
-    : isActivePlayer ? 'saca un disco y escucha.' : 'se viene un disco.';
+    : isActivePlayer ? 'escucha y ubícalo por año.' : 'se viene un disco.';
 
   const placeText = isRevealed && card
     ? room.validationResult
@@ -185,17 +183,13 @@ export default function Game() {
       ? 'sin fichas para robar.'
       : 'esperando al resto…'
     : isChoosing
-    ? displayError ?? (!isPlaced
-      ? describePlace(timeline, myPlace)
-      : canListen
-      ? `lo pusiste ${describePlace(timeline, restingPlace)}`
-      : 'escúchala para confirmar.')
+    ? displayError ?? describePlace(timeline, isBrowsingMine ? myPlace : restingPlace)
     : room.status === 'round_active'
     ? room.selectedPosition === null
       ? 'hojeando…'
       : `${currentPlayer.name} lo puso ${describePlace(timeline, room.selectedPosition)}`
     : isActivePlayer
-    ? 'cuando suene, hojea tu caja.'
+    ? crateButtons ? 'cuando suene, hojea tu caja.' : 'toca el disco para sacarlo.'
     : `esperando a ${currentPlayer.name}…`;
 
   const verdict: RevealVerdict | null = !isRevealed || !card
@@ -227,11 +221,13 @@ export default function Game() {
     </>
   );
 
-  const gestureCue = crateButtons || !canControlDisc
+  const gestureCue = !canControlDisc
     ? null
-    : isPlaced
-    ? 'arrastra el disco hacia arriba para sacarlo.'
-    : 'arrastra el disco hasta la caja.';
+    : !canListen
+    ? 'escúchala antes de dejarla.'
+    : crateButtons
+    ? null
+    : 'arrastra el disco a la caja para dejarlo ahí.';
 
   const hint = window.matchMedia('(pointer: coarse)').matches ? 'desliza para hojear' : 'arrastra o usa las flechas';
 
@@ -249,7 +245,8 @@ export default function Game() {
         onPositionChange={browseTo}
         onConfirm={handleCrateEnter}
         browsable={!!browseTo}
-        opened={isPlaced}
+        opened={discInCrate || (dropArmed && isBrowsingMine)}
+        callout={dropArmed && isBrowsingMine ? describePlace(timeline, myPlace) : null}
         title={isActivePlayer ? 'tu caja' : `caja de ${currentPlayer.name}`}
         note={`${plural(currentPlayer.score, 'pt', 'pts')} · ${plural(currentPlayer.tokens, 'ficha', 'fichas')}`}
         hint={hint}
@@ -261,23 +258,24 @@ export default function Game() {
           <CrateDisc state="fuera" accent={decadeAccent(card.year)}>
             <span className="etiqueta-anio">{card.year}</span>
           </CrateDisc>
-        ) : isPlaced ? (
+        ) : discInCrate ? (
+          <CrateDisc state="puesto" spinning={activePlayer.isPlaying}>¿?</CrateDisc>
+        ) : room.status === 'setup' ? (
           <CrateDisc
-            state="puesto"
-            spinning={activePlayer.isPlaying}
-            onTap={togglePlay}
-            tapLabel={playLabel}
-            onDragOut={canControlDisc ? takeOut : undefined}
+            state={canDraw ? 'asomado' : 'esperando'}
+            onTap={canDraw ? drawAndPlay : undefined}
+            tapLabel="sacar disco"
           >
-            {discLabel}
+            ¿?
           </CrateDisc>
         ) : (
           <CrateDisc
-            state={room.status === 'setup' ? 'esperando' : 'mano'}
+            state="mano"
             spinning={activePlayer.isPlaying}
             onTap={togglePlay}
             tapLabel={playLabel}
-            onDragIn={canControlDisc ? putHere : undefined}
+            onDrop={canDrop && canControlDisc ? dropHere : undefined}
+            onArmedChange={setDropArmed}
           >
             {discLabel}
           </CrateDisc>
@@ -290,7 +288,7 @@ export default function Game() {
         </p>
         {gestureCue && <p className="font-label opacity-60">{gestureCue}</p>}
 
-        {room.status === 'setup' && isActivePlayer && (
+        {canDraw && crateButtons && (
           <button onClick={drawAndPlay} className="btn btn-signal">sacar disco.</button>
         )}
 
@@ -298,21 +296,12 @@ export default function Game() {
           <button onClick={() => skipCard(false)} className="btn btn-cream">saltar canción.</button>
         )}
 
-        {isChoosing && !missingYouTubeVideo && !displayError && (
+        {canControlDisc && (
           <>
-            {isPlaced ? (
-              crateButtons ? (
-                <div className="grid grid-cols-[1fr_2fr] gap-2">
-                  <button onClick={takeOut} className="btn btn-tone">sacarlo.</button>
-                  <button onClick={confirmPlace} disabled={!canListen} className="btn btn-signal">va aquí.</button>
-                </div>
-              ) : (
-                <button onClick={confirmPlace} disabled={!canListen} className="btn btn-signal">va aquí.</button>
-              )
-            ) : crateButtons && (
+            {crateButtons && (
               <div className={BROWSE_ROW}>
                 <button onClick={() => browseMine(myPlace - 1)} disabled={myPlace === 0} aria-label="antes" className={ARROW}>‹</button>
-                <button onClick={putHere} className="btn btn-cream">ponerlo aquí.</button>
+                <button onClick={dropHere} disabled={!canDrop} className="btn btn-signal">va aquí.</button>
                 <button onClick={() => browseMine(myPlace + 1)} disabled={myPlace === lastPlace} aria-label="después" className={ARROW}>›</button>
               </div>
             )}

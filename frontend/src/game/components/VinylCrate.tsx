@@ -1,4 +1,4 @@
-import { useRef, useState, type KeyboardEvent, type PointerEvent, type ReactNode } from 'react';
+import { useRef, useState, type CSSProperties, type KeyboardEvent, type PointerEvent, type ReactNode } from 'react';
 import type { Song } from '../../types/game';
 import { accentStyle, decadeAccent, type Accent } from '../../utils/songColor';
 import { cn } from '../../utils/cn';
@@ -67,6 +67,7 @@ interface VinylCrateProps {
   onConfirm?: () => void;
   browsable: boolean;
   opened?: boolean;
+  callout?: string | null;
   title: string;
   note?: string;
   hint?: string;
@@ -92,6 +93,7 @@ export function VinylCrate({
   onConfirm,
   browsable,
   opened = false,
+  callout = null,
   title,
   note,
   hint,
@@ -209,6 +211,7 @@ export function VinylCrate({
             {hint}
           </p>
         )}
+        <p className={cn('cv-aviso', callout && 'cv-visible')} aria-hidden="true">{callout}</p>
         <div className="cv-labio" aria-hidden="true">
           <span>{title}</span>
           {note && <span className="cv-nota">{note}</span>}
@@ -218,7 +221,7 @@ export function VinylCrate({
   );
 }
 
-export type DiscState = 'esperando' | 'mano' | 'puesto' | 'fuera';
+export type DiscState = 'esperando' | 'asomado' | 'mano' | 'puesto' | 'fuera';
 
 interface CrateDiscProps {
   state: DiscState;
@@ -226,8 +229,8 @@ interface CrateDiscProps {
   spinning?: boolean;
   onTap?: () => void;
   tapLabel?: string;
-  onDragIn?: () => void;
-  onDragOut?: () => void;
+  onDrop?: () => void;
+  onArmedChange?: (armed: boolean) => void;
   children: ReactNode;
 }
 
@@ -236,25 +239,37 @@ interface DiscDrag {
   x: number;
   y: number;
   moved: boolean;
+  armed: boolean;
 }
 
 interface DiscOffset {
   x: number;
   y: number;
+  approach: number;
+  armed: boolean;
   state: DiscState;
 }
 
-export function CrateDisc({ state, accent = null, spinning = false, onTap, tapLabel, onDragIn, onDragOut, children }: CrateDiscProps) {
+const DISC_GROWTH = 0.7;
+const DISC_APPROACH_PX = 90;
+
+export function CrateDisc({ state, accent = null, spinning = false, onTap, tapLabel, onDrop, onArmedChange, children }: CrateDiscProps) {
   const drag = useRef<DiscDrag | null>(null);
   const draggedAway = useRef(false);
   const [offset, setOffset] = useState<DiscOffset | null>(null);
-  const draggable = !!(onDragIn || onDragOut);
+  const draggable = !!onDrop;
   const visibleOffset = offset?.state === state ? offset : null;
+
+  const setArmed = (current: DiscDrag, armed: boolean) => {
+    if (current.armed === armed) return;
+    current.armed = armed;
+    onArmedChange?.(armed);
+  };
 
   const handlePointerDown = (event: PointerEvent<HTMLButtonElement>) => {
     draggedAway.current = false;
     if (!draggable) return;
-    drag.current = { pointerId: event.pointerId, x: event.clientX, y: event.clientY, moved: false };
+    drag.current = { pointerId: event.pointerId, x: event.clientX, y: event.clientY, moved: false, armed: false };
     event.currentTarget.setPointerCapture(event.pointerId);
   };
 
@@ -265,7 +280,9 @@ export function CrateDisc({ state, accent = null, spinning = false, onTap, tapLa
     const y = event.clientY - current.y;
     if (!current.moved && Math.hypot(x, y) < TAP_TOLERANCE) return;
     current.moved = true;
-    setOffset({ x, y, state });
+    const armed = y > DISC_DROP_DISTANCE;
+    setArmed(current, armed);
+    setOffset({ x, y, approach: clamp(y / (DISC_DROP_DISTANCE * 1.6), 0, 1), armed, state });
   };
 
   const release = (event: PointerEvent<HTMLButtonElement>, cancelled: boolean) => {
@@ -274,15 +291,23 @@ export function CrateDisc({ state, accent = null, spinning = false, onTap, tapLa
     drag.current = null;
     if (!current.moved) return;
     draggedAway.current = true;
-    const dy = event.clientY - current.y;
-    const drop = cancelled ? undefined : dy > DISC_DROP_DISTANCE ? onDragIn : dy < -DISC_DROP_DISTANCE ? onDragOut : undefined;
-    if (!drop) {
+    const dropped = !cancelled && current.armed;
+    setArmed(current, false);
+    if (!dropped) {
       setOffset(null);
       return;
     }
-    drop();
+    onDrop?.();
     window.setTimeout(() => setOffset(null), DISC_SETTLE_MS);
   };
+
+  const dragStyle = visibleOffset
+    ? {
+        translate: `${visibleOffset.x}px ${visibleOffset.y}px`,
+        '--crece': 1 + DISC_GROWTH * visibleOffset.approach,
+        '--acerca': `${DISC_APPROACH_PX * visibleOffset.approach}px`,
+      } as CSSProperties
+    : undefined;
 
   const handleClick = () => {
     if (draggedAway.current) {
@@ -298,7 +323,8 @@ export function CrateDisc({ state, accent = null, spinning = false, onTap, tapLa
       className={cn('cv-disco', draggable && 'cv-disco-arrastrable')}
       data-estado={state}
       data-arrastrando={visibleOffset ? '' : undefined}
-      style={visibleOffset ? { translate: `${visibleOffset.x}px ${visibleOffset.y}px` } : undefined}
+      data-armado={visibleOffset?.armed || undefined}
+      style={dragStyle}
       onClick={handleClick}
       onPointerDown={handlePointerDown}
       onPointerMove={handlePointerMove}
