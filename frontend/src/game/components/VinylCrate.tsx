@@ -12,28 +12,32 @@ const FLIPPED_TILT = -32;
 const EXTRA_TILT_PER_FALLEN = 16;
 const SLEEVES_VISIBLE_BEHIND = 3;
 const SLEEVES_VISIBLE_IN_FRONT = 3;
+const OPEN_GAP = 18;
 const PIXELS_PER_SLEEVE = 44;
 const TAP_TOLERANCE = 6;
+const DISC_DROP_DISTANCE = 48;
+const DISC_SETTLE_MS = 900;
 
 const clamp = (value: number, min: number, max: number) => Math.min(max, Math.max(min, value));
 const smoothstep = (t: number) => t * t * (3 - 2 * t);
 
-function sleevePose(distance: number): { transform: string; opacity: number } {
+function sleevePose(distance: number, opened: boolean): { transform: string; opacity: number } {
   const flipped = smoothstep(clamp(0.5 - distance, 0, 1));
   const behind = Math.max(0, distance - 0.5);
   const inFront = Math.max(0, -distance - 0.5);
-  const z = -behind * DEPTH_BETWEEN_SLEEVES + inFront * SPACING_BETWEEN_FALLEN + flipped * 2;
+  const gap = opened && distance < 0 ? OPEN_GAP : 0;
+  const z = -behind * DEPTH_BETWEEN_SLEEVES + inFront * SPACING_BETWEEN_FALLEN + flipped * 2 + gap;
   const y = -behind * RISE_BETWEEN_SLEEVES;
   const tilt = RESTING_TILT + (FLIPPED_TILT - RESTING_TILT) * flipped - inFront * EXTRA_TILT_PER_FALLEN;
   const hidden = behind > SLEEVES_VISIBLE_BEHIND || inFront > SLEEVES_VISIBLE_IN_FRONT;
   return { transform: `translate3d(-50%, ${y}px, ${z}px) rotateX(${tilt}deg)`, opacity: hidden ? 0 : 1 };
 }
 
-function Sleeve({ song, distance, inView, justBefore }: { song: Song; distance: number; inView: boolean; justBefore: boolean }) {
+function Sleeve({ song, pose, inView, inFront }: { song: Song; pose: ReturnType<typeof sleevePose>; inView: boolean; inFront: boolean }) {
   return (
     <div
-      className={cn('cv-funda', inView && 'cv-a-la-vista', justBefore && 'cv-anterior')}
-      style={{ ...sleevePose(distance), ...accentStyle(decadeAccent(song.year)) }}
+      className={cn('cv-funda', inView && 'cv-a-la-vista', inFront && 'cv-delante')}
+      style={{ ...pose, ...accentStyle(decadeAccent(song.year)) }}
       aria-hidden="true"
     >
       <div className="cv-cara cv-frente">
@@ -62,6 +66,7 @@ interface VinylCrateProps {
   onPositionChange?: (position: number) => void;
   onConfirm?: () => void;
   browsable: boolean;
+  opened?: boolean;
   title: string;
   note?: string;
   hint?: string;
@@ -86,6 +91,7 @@ export function VinylCrate({
   onPositionChange,
   onConfirm,
   browsable,
+  opened = false,
   title,
   note,
   hint,
@@ -124,7 +130,7 @@ export function VinylCrate({
     const advance = Math.abs(dy) >= Math.abs(dx) ? dy : dx;
     if (!current.moved && Math.abs(advance) < TAP_TOLERANCE) return;
     current.moved = true;
-    const next = clamp(current.start + advance / PIXELS_PER_SLEEVE, 0, lastPosition);
+    const next = clamp(current.start - advance / PIXELS_PER_SLEEVE, 0, lastPosition);
     setDragCursor(next);
     moveTo(next);
   };
@@ -141,9 +147,9 @@ export function VinylCrate({
     if (!browsable) return;
     const targets: Record<string, number> = {
       ArrowLeft: position - 1,
-      ArrowUp: position - 1,
+      ArrowDown: position - 1,
       ArrowRight: position + 1,
-      ArrowDown: position + 1,
+      ArrowUp: position + 1,
       Home: 0,
       End: lastPosition,
     };
@@ -178,10 +184,16 @@ export function VinylCrate({
       >
         <div className="cv-escena">
           {songs.map((song, i) => (
-            <Sleeve key={song.id} song={song} distance={i + 0.5 - cursor} inView={i === place} justBefore={i === place - 1} />
+            <Sleeve
+              key={song.id}
+              song={song}
+              pose={sleevePose(cursor - i - 0.5, opened)}
+              inView={i === place - 1}
+              inFront={i === place}
+            />
           ))}
           {markers.map((marker, i) => {
-            const { transform, opacity } = sleevePose(marker.position + 0.5 - cursor);
+            const { transform, opacity } = sleevePose(cursor - marker.position + 0.5, opened);
             return (
               <div key={marker.position} className="cv-separador" style={{ transform }} aria-hidden="true">
                 <span className={cn('cv-pestana', i % 2 === 1 && 'cv-pestana-derecha')} style={{ opacity }}>
@@ -206,7 +218,7 @@ export function VinylCrate({
   );
 }
 
-export type DiscState = 'asomado' | 'mano' | 'puesto' | 'fuera';
+export type DiscState = 'esperando' | 'mano' | 'puesto' | 'fuera';
 
 interface CrateDiscProps {
   state: DiscState;
@@ -214,20 +226,97 @@ interface CrateDiscProps {
   spinning?: boolean;
   onTap?: () => void;
   tapLabel?: string;
+  onDragIn?: () => void;
+  onDragOut?: () => void;
   children: ReactNode;
 }
 
-export function CrateDisc({ state, accent = null, spinning = false, onTap, tapLabel, children }: CrateDiscProps) {
+interface DiscDrag {
+  pointerId: number;
+  x: number;
+  y: number;
+  moved: boolean;
+}
+
+interface DiscOffset {
+  x: number;
+  y: number;
+  state: DiscState;
+}
+
+export function CrateDisc({ state, accent = null, spinning = false, onTap, tapLabel, onDragIn, onDragOut, children }: CrateDiscProps) {
+  const drag = useRef<DiscDrag | null>(null);
+  const draggedAway = useRef(false);
+  const [offset, setOffset] = useState<DiscOffset | null>(null);
+  const draggable = !!(onDragIn || onDragOut);
+  const visibleOffset = offset?.state === state ? offset : null;
+
+  const handlePointerDown = (event: PointerEvent<HTMLButtonElement>) => {
+    draggedAway.current = false;
+    if (!draggable) return;
+    drag.current = { pointerId: event.pointerId, x: event.clientX, y: event.clientY, moved: false };
+    event.currentTarget.setPointerCapture(event.pointerId);
+  };
+
+  const handlePointerMove = (event: PointerEvent<HTMLButtonElement>) => {
+    const current = drag.current;
+    if (!current || event.pointerId !== current.pointerId) return;
+    const x = event.clientX - current.x;
+    const y = event.clientY - current.y;
+    if (!current.moved && Math.hypot(x, y) < TAP_TOLERANCE) return;
+    current.moved = true;
+    setOffset({ x, y, state });
+  };
+
+  const release = (event: PointerEvent<HTMLButtonElement>, cancelled: boolean) => {
+    const current = drag.current;
+    if (!current || event.pointerId !== current.pointerId) return;
+    drag.current = null;
+    if (!current.moved) return;
+    draggedAway.current = true;
+    const dy = event.clientY - current.y;
+    const drop = cancelled ? undefined : dy > DISC_DROP_DISTANCE ? onDragIn : dy < -DISC_DROP_DISTANCE ? onDragOut : undefined;
+    if (!drop) {
+      setOffset(null);
+      return;
+    }
+    drop();
+    window.setTimeout(() => setOffset(null), DISC_SETTLE_MS);
+  };
+
+  const handleClick = () => {
+    if (draggedAway.current) {
+      draggedAway.current = false;
+      return;
+    }
+    onTap?.();
+  };
+
   return (
     <button
       type="button"
-      className="cv-disco"
+      className={cn('cv-disco', draggable && 'cv-disco-arrastrable')}
       data-estado={state}
-      onClick={onTap}
-      disabled={!onTap}
+      data-arrastrando={visibleOffset ? '' : undefined}
+      style={visibleOffset ? { translate: `${visibleOffset.x}px ${visibleOffset.y}px` } : undefined}
+      onClick={handleClick}
+      onPointerDown={handlePointerDown}
+      onPointerMove={handlePointerMove}
+      onPointerUp={(event) => release(event, false)}
+      onPointerCancel={(event) => release(event, true)}
+      disabled={!onTap && !draggable}
       aria-label={tapLabel}
+      aria-hidden={state === 'esperando' || undefined}
     >
       <Vinyl accent={accent} spinning={spinning}>{children}</Vinyl>
     </button>
+  );
+}
+
+export function PlayIcon({ playing }: { playing: boolean }) {
+  return (
+    <svg className="etiqueta-icono" viewBox="0 0 24 24" aria-hidden="true">
+      {playing ? <path d="M6 4h4v16H6zM14 4h4v16h-4z" /> : <path d="M7 4.5v15l12.5-7.5z" />}
+    </svg>
   );
 }

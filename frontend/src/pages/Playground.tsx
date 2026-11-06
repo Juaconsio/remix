@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { CrateDisc, VinylCrate, type DiscState } from '../game/components/VinylCrate';
+import { CrateDisc, PlayIcon, VinylCrate, type DiscState } from '../game/components/VinylCrate';
 import { Vinyl } from '../game/components/Vinyl';
 import { SettingsTrigger } from '../game/components/SettingsTrigger';
 import { SIGNAL_ACCENT, decadeAccent } from '../utils/songColor';
@@ -24,7 +24,7 @@ const CRATE_SONGS: Song[] = [
 ];
 
 const DECADE_YEARS = [1965, 1975, 1985, 1995, 2005, 2015, 2025];
-const DISC_STATES: DiscState[] = ['asomado', 'mano', 'puesto', 'fuera'];
+const DISC_STATES: DiscState[] = ['esperando', 'mano', 'puesto', 'fuera'];
 
 function Pill({ label, active, onClick }: { label: string; active: boolean; onClick: () => void }) {
   return (
@@ -52,6 +52,7 @@ export default function Playground() {
   const [browsable, setBrowsable] = useState(true);
   const [disc, setDisc] = useState<DiscState>('mano');
   const [withMarkers, setWithMarkers] = useState(false);
+  const [playing, setPlaying] = useState(false);
 
   return (
     <main className="min-h-dvh bg-bg text-ink max-w-107.5 mx-auto pb-24">
@@ -81,6 +82,7 @@ export default function Playground() {
           position={place}
           onPositionChange={setPlace}
           browsable={browsable}
+          opened={disc === 'puesto'}
           title="tu caja"
           hint="desliza para hojear"
           markers={withMarkers ? [{ position: 1, label: 'A' }, { position: 4, label: 'B' }] : []}
@@ -92,7 +94,16 @@ export default function Playground() {
               <span className="etiqueta-anio">1999</span>
             </CrateDisc>
           ) : (
-            <CrateDisc state={disc} spinning={disc === 'mano'}>¿?</CrateDisc>
+            <CrateDisc
+              state={disc}
+              spinning={playing}
+              onTap={() => setPlaying((p) => !p)}
+              tapLabel={playing ? 'parar' : 'escuchar'}
+              onDragIn={disc === 'mano' ? () => setDisc('puesto') : undefined}
+              onDragOut={disc === 'puesto' ? () => setDisc('mano') : undefined}
+            >
+              <PlayIcon playing={playing} />
+            </CrateDisc>
           )}
         </VinylCrate>
         <p className="font-display px-5 py-3" style={{ fontSize: 20 }}>lugar {place} de {CRATE_SONGS.length}.</p>

@@ -225,7 +225,7 @@
 .cv-hojeable { touch-action: none; cursor: grab; }
 .cv-arrastrando { cursor: grabbing; }
 
-.cv-escena { position: absolute; inset: 0; transform-style: preserve-3d; }
+.cv-escena { position: absolute; inset: 0; transform-style: preserve-3d; pointer-events: none; }
 
 .cv-funda, .cv-separador {
   position: absolute;
@@ -318,14 +318,26 @@
   background: none;
   border-radius: 50%;
   transform-origin: 50% 100%;
-  transition: transform 480ms var(--ease-out), opacity 200ms;
+  pointer-events: auto;
+  transition: transform 620ms var(--ease-out), translate 520ms var(--ease-out), opacity 200ms;
 }
-.cv-disco[data-estado='asomado'] { transform: translate3d(-50%, -21%, -12px) rotateX(7deg); }
-.cv-disco[data-estado='mano'] { transform: translate3d(calc(-50% + var(--lado) * 0.42), -104%, 60px) rotateX(7deg) scale(0.42); }
-.cv-disco[data-estado='puesto'] { transform: translate3d(calc(-50% + var(--lado) * 0.3), -10%, 90px) rotateX(-20deg) scale(0.5); }
-.cv-dorso .cv-anio { font-size: 34px; }
-.cv-disco[data-estado='fuera'] { transform: translate3d(-50%, -40%, 44px) rotateX(7deg); }
+.cv-disco[data-arrastrando] { transition: none; cursor: grabbing; }
+.cv-disco-arrastrable { touch-action: none; cursor: grab; }
+.cv-disco[data-estado='esperando'] {
+  transform: translate3d(calc(-50% + 100cqw), -104%, 60px) rotateX(7deg) scale(0.42) translateY(-50%) rotate(-220deg) translateY(50%);
+}
+.cv-disco[data-estado='mano'] {
+  transform: translate3d(calc(-50% + var(--lado) * 0.42), -104%, 60px) rotateX(7deg) scale(0.42) translateY(-50%) rotate(0deg) translateY(50%);
+}
+.cv-disco[data-estado='puesto'] {
+  transform: translate3d(calc(-50% + var(--lado) * 0.36), -70%, 8px) rotateX(7deg) scale(0.75) translateY(-50%) rotate(0deg) translateY(50%);
+}
+.cv-disco[data-estado='fuera'] {
+  transform: translate3d(-50%, -40%, 44px) rotateX(7deg) scale(1) translateY(-50%) rotate(0deg) translateY(50%);
+}
 .cv-disco:disabled { cursor: default; }
+.cv-dorso .cv-anio { font-size: 34px; }
+.etiqueta-icono { width: 42%; fill: currentColor; }
 
 .cv-pista {
   position: absolute;

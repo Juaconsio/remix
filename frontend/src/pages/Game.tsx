@@ -3,9 +3,10 @@ import { useNavigate } from 'react-router-dom';
 import { useSocket } from '../hooks/useSocket';
 import { useGameAudio } from '../hooks/useGameAudio';
 import { GameHeader } from '../game/components/GameHeader';
-import { CrateDisc, VinylCrate, type CrateMarker } from '../game/components/VinylCrate';
+import { CrateDisc, PlayIcon, VinylCrate, type CrateMarker } from '../game/components/VinylCrate';
 import { PregameOverlay } from '../game/components/PregameOverlay';
 import { PauseOverlay } from '../game/components/PauseOverlay';
+import { useControlsStore } from '../store/controlsStore';
 import { decadeAccent } from '../utils/songColor';
 import type { Song } from '../types/game';
 
@@ -66,6 +67,7 @@ export default function Game() {
   const secondsLeft = useStealCountdown(isStealing);
   const [browse, setBrowse] = useState<Browse | null>(null);
   const [stealBrowse, setStealBrowse] = useState<Browse | null>(null);
+  const crateButtons = useControlsStore((s) => s.crateButtons);
 
   useEffect(() => {
     if (!room) { navigate('/'); return; }
@@ -144,6 +146,11 @@ export default function Game() {
   };
   const handleCrateEnter = isBrowsingMine ? putHere : isChoosing && canListen ? confirmPlace : undefined;
 
+  const canControlDisc = isChoosing && !missingYouTubeVideo && !displayError;
+  const togglePlay = canControlDisc ? (activePlayer.isPlaying ? activePlayer.stop : activePlayer.play) : undefined;
+  const playLabel = activePlayer.isPlaying ? 'parar la canción' : 'escuchar la canción';
+  const discLabel = isChoosing ? <PlayIcon playing={activePlayer.isPlaying} /> : '¿?';
+
   const stealWinnerName = nameOf(room.stealWinnerId);
 
   const title = isRevealed && card
@@ -188,7 +195,13 @@ export default function Game() {
     ? 'cuando suene, hojea tu caja.'
     : `esperando a ${currentPlayer.name}…`;
 
-  const hint = window.matchMedia('(pointer: coarse)').matches ? 'desliza para hojear' : 'usa las flechas para hojear';
+  const gestureCue = crateButtons || !canControlDisc
+    ? null
+    : isPlaced
+    ? 'arrastra el disco hacia arriba para sacarlo.'
+    : 'arrastra el disco hasta la caja.';
+
+  const hint = window.matchMedia('(pointer: coarse)').matches ? 'desliza para hojear' : 'arrastra o usa las flechas';
 
   return (
     <main className="relative min-h-dvh max-w-107.5 mx-auto grid grid-cols-1 grid-rows-[auto_minmax(17.5rem,1fr)_auto] bg-ground text-cream">
@@ -204,6 +217,7 @@ export default function Game() {
         onPositionChange={browseTo}
         onConfirm={handleCrateEnter}
         browsable={!!browseTo}
+        opened={isPlaced}
         title={isActivePlayer ? 'tu caja' : `caja de ${currentPlayer.name}`}
         note={`${plural(currentPlayer.score, 'pt', 'pts')} · ${plural(currentPlayer.tokens, 'ficha', 'fichas')}`}
         hint={hint}
@@ -219,19 +233,21 @@ export default function Game() {
           <CrateDisc
             state="puesto"
             spinning={activePlayer.isPlaying}
-            onTap={isChoosing ? takeOut : undefined}
-            tapLabel="sacar el disco"
+            onTap={togglePlay}
+            tapLabel={playLabel}
+            onDragOut={canControlDisc ? takeOut : undefined}
           >
-            ¿?
+            {discLabel}
           </CrateDisc>
         ) : (
           <CrateDisc
-            state={room.status === 'setup' ? 'asomado' : 'mano'}
+            state={room.status === 'setup' ? 'esperando' : 'mano'}
             spinning={activePlayer.isPlaying}
-            onTap={isChoosing && !missingYouTubeVideo ? (activePlayer.isPlaying ? activePlayer.stop : activePlayer.play) : undefined}
-            tapLabel={activePlayer.isPlaying ? 'parar la canción' : 'escuchar la canción'}
+            onTap={togglePlay}
+            tapLabel={playLabel}
+            onDragIn={canControlDisc ? putHere : undefined}
           >
-            ¿?
+            {discLabel}
           </CrateDisc>
         )}
       </VinylCrate>
@@ -240,6 +256,7 @@ export default function Game() {
         <p className="font-display min-h-6" style={{ fontSize: 20, lineHeight: 1.1 }} aria-live="polite">
           {placeText}
         </p>
+        {gestureCue && <p className="font-label opacity-60">{gestureCue}</p>}
 
         {room.status === 'setup' && isActivePlayer && (
           <button onClick={drawAndPlay} className="btn btn-signal">sacar disco.</button>
@@ -252,11 +269,15 @@ export default function Game() {
         {isChoosing && !missingYouTubeVideo && !displayError && (
           <>
             {isPlaced ? (
-              <div className="grid grid-cols-[1fr_2fr] gap-2">
-                <button onClick={takeOut} className="btn btn-tone">sacarlo.</button>
+              crateButtons ? (
+                <div className="grid grid-cols-[1fr_2fr] gap-2">
+                  <button onClick={takeOut} className="btn btn-tone">sacarlo.</button>
+                  <button onClick={confirmPlace} disabled={!canListen} className="btn btn-signal">va aquí.</button>
+                </div>
+              ) : (
                 <button onClick={confirmPlace} disabled={!canListen} className="btn btn-signal">va aquí.</button>
-              </div>
-            ) : (
+              )
+            ) : crateButtons && (
               <div className={BROWSE_ROW}>
                 <button onClick={() => browseMine(myPlace - 1)} disabled={myPlace === 0} aria-label="antes" className={ARROW}>‹</button>
                 <button onClick={putHere} className="btn btn-cream">ponerlo aquí.</button>
@@ -277,12 +298,16 @@ export default function Game() {
 
         {canSteal && (
           <>
-            <div className={BROWSE_ROW}>
-              <button onClick={() => browseSteal(stealPlace - 1)} disabled={stealPlace === 0} aria-label="antes" className={ARROW}>‹</button>
+            <div className={crateButtons ? BROWSE_ROW : 'grid'}>
+              {crateButtons && (
+                <button onClick={() => browseSteal(stealPlace - 1)} disabled={stealPlace === 0} aria-label="antes" className={ARROW}>‹</button>
+              )}
               <button onClick={() => stealCard(stealPlace)} disabled={stealSpotTaken} className="btn btn-signal">
                 {stealSpotTaken ? 'lugar tomado.' : 'robar · 1 ficha'}
               </button>
-              <button onClick={() => browseSteal(stealPlace + 1)} disabled={stealPlace === lastPlace} aria-label="después" className={ARROW}>›</button>
+              {crateButtons && (
+                <button onClick={() => browseSteal(stealPlace + 1)} disabled={stealPlace === lastPlace} aria-label="después" className={ARROW}>›</button>
+              )}
             </div>
             <button onClick={passSteal} className="btn btn-tone btn-small">paso</button>
           </>
