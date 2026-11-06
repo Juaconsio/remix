@@ -1,11 +1,13 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { AnimatePresence } from 'framer-motion';
 import { useSocket } from '../hooks/useSocket';
 import { useGameAudio } from '../hooks/useGameAudio';
 import { GameHeader } from '../game/components/GameHeader';
 import { CrateDisc, PlayIcon, VinylCrate, type CrateMarker } from '../game/components/VinylCrate';
 import { PregameOverlay } from '../game/components/PregameOverlay';
 import { PauseOverlay } from '../game/components/PauseOverlay';
+import { RevealCloseUp, type RevealVerdict } from '../game/components/RevealCloseUp';
 import { useControlsStore } from '../store/controlsStore';
 import { decadeAccent } from '../utils/songColor';
 import type { Song } from '../types/game';
@@ -68,6 +70,7 @@ export default function Game() {
   const [browse, setBrowse] = useState<Browse | null>(null);
   const [stealBrowse, setStealBrowse] = useState<Browse | null>(null);
   const crateButtons = useControlsStore((s) => s.crateButtons);
+  const [closedRevealId, setClosedRevealId] = useState<string | null>(null);
 
   useEffect(() => {
     if (!room) { navigate('/'); return; }
@@ -195,6 +198,35 @@ export default function Game() {
     ? 'cuando suene, hojea tu caja.'
     : `esperando a ${currentPlayer.name}…`;
 
+  const verdict: RevealVerdict | null = !isRevealed || !card
+    ? null
+    : room.validationResult
+    ? { title: 'correcto.', detail: isActivePlayer ? 'se queda en tu caja.' : `se queda en la caja de ${currentPlayer.name}.`, scored: true }
+    : stealWinnerName
+    ? { title: `${stealWinnerName} la robó.`, detail: `era de ${card.year}. se va a su caja.`, scored: true }
+    : { title: 'no era ahí.', detail: `era de ${card.year}. se va.`, scored: false };
+
+  const revealActions = isRevealed && (
+    <>
+      {isHost && (
+        room.tokenAwarded ? (
+          <p className="font-label opacity-60">ficha para {currentPlayer.name} ✓</p>
+        ) : (
+          <button onClick={awardToken} className="btn btn-cream btn-small">
+            {currentPlayer.name} la nombró · +1 ficha
+          </button>
+        )
+      )}
+      {isActivePlayer || isHost ? (
+        <button onClick={nextTurn} className="btn btn-signal">
+          {isLastTurn ? 'ver resultados.' : 'siguiente.'}
+        </button>
+      ) : (
+        <p className="font-label opacity-60">esperando a {currentPlayer.name}…</p>
+      )}
+    </>
+  );
+
   const gestureCue = crateButtons || !canControlDisc
     ? null
     : isPlaced
@@ -313,22 +345,16 @@ export default function Game() {
           </>
         )}
 
-        {isRevealed && isHost && (
-          room.tokenAwarded ? (
-            <p className="font-label opacity-60">ficha para {currentPlayer.name} ✓</p>
-          ) : (
-            <button onClick={awardToken} className="btn btn-cream btn-small">
-              {currentPlayer.name} la nombró · +1 ficha
-            </button>
-          )
-        )}
-
-        {isRevealed && (isActivePlayer || isHost) && (
-          <button onClick={nextTurn} className="btn btn-signal">
-            {isLastTurn ? 'ver resultados.' : 'siguiente.'}
-          </button>
-        )}
+        {revealActions}
       </footer>
+
+      <AnimatePresence>
+        {card && verdict && closedRevealId !== card.id && (
+          <RevealCloseUp key={card.id} song={card} verdict={verdict} onClose={() => setClosedRevealId(card.id)}>
+            {revealActions}
+          </RevealCloseUp>
+        )}
+      </AnimatePresence>
 
       <PregameOverlay
         players={room.players}

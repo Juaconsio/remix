@@ -1,5 +1,7 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
+import { AnimatePresence } from 'framer-motion';
+import { RevealCloseUp, type RevealVerdict } from '../game/components/RevealCloseUp';
 import { CrateDisc, PlayIcon, VinylCrate, type DiscState } from '../game/components/VinylCrate';
 import { Vinyl } from '../game/components/Vinyl';
 import { SettingsTrigger } from '../game/components/SettingsTrigger';
@@ -24,6 +26,11 @@ const CRATE_SONGS: Song[] = [
 ];
 
 const DECADE_YEARS = [1965, 1975, 1985, 1995, 2005, 2015, 2025];
+const REVEAL_VERDICTS: RevealVerdict[] = [
+  { title: 'correcto.', detail: 'se queda en tu caja.', scored: true },
+  { title: 'Bea la robó.', detail: 'era de 1986. se va a su caja.', scored: true },
+  { title: 'no era ahí.', detail: 'era de 1986. se va.', scored: false },
+];
 const DISC_STATES: DiscState[] = ['esperando', 'mano', 'puesto', 'fuera'];
 
 function Pill({ label, active, onClick }: { label: string; active: boolean; onClick: () => void }) {
@@ -53,6 +60,7 @@ export default function Playground() {
   const [disc, setDisc] = useState<DiscState>('mano');
   const [withMarkers, setWithMarkers] = useState(false);
   const [playing, setPlaying] = useState(false);
+  const [reveal, setReveal] = useState<RevealVerdict | null>(null);
 
   return (
     <main className="min-h-dvh bg-bg text-ink max-w-107.5 mx-auto pb-24">
@@ -108,6 +116,21 @@ export default function Playground() {
         </VinylCrate>
         <p className="font-display px-5 py-3" style={{ fontSize: 20 }}>lugar {place} de {CRATE_SONGS.length}.</p>
       </div>
+
+      <Section title="revelación.">
+        <div className="flex flex-wrap gap-1">
+          {REVEAL_VERDICTS.map((verdict) => (
+            <Pill key={verdict.title} label={verdict.title} active={reveal === verdict} onClick={() => setReveal(verdict)} />
+          ))}
+        </div>
+      </Section>
+      <AnimatePresence>
+        {reveal && (
+          <RevealCloseUp song={CRATE_SONGS[2]} verdict={reveal} onClose={() => setReveal(null)}>
+            <button onClick={() => setReveal(null)} className="btn btn-signal">siguiente.</button>
+          </RevealCloseUp>
+        )}
+      </AnimatePresence>
 
       <Section title="vinilos por década.">
         <div className="grid grid-cols-4 gap-3">
