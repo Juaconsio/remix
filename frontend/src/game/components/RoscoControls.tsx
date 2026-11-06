@@ -6,7 +6,6 @@ interface RoscoControlsProps {
   subMode: RoscoSubMode;
   cell: RoscoCell;
   players: RoomPlayer[];
-  currentPlayerIndex: number;
   onAward: (playerId: string, award: Award) => void;
   onSkip: () => void;
   onCorrect: (award: Award) => void;
@@ -14,130 +13,53 @@ interface RoscoControlsProps {
   onPass: () => void;
 }
 
-function AwardButtons({
-  cell,
-  disabled,
-  onPick,
-}: {
-  cell: RoscoCell;
-  disabled?: boolean;
-  onPick: (award: Award) => void;
-}) {
-  const className =
-    'flex-1 py-3 rounded-[14px] font-display text-ink disabled:opacity-30 active:opacity-70 transition-opacity';
-  const style = { background: 'var(--color-success)', color: '#0e0e0e', fontSize: 14, fontStyle: 'italic' as const, fontWeight: 700 };
+const TRIO = 'btn btn-success px-1 text-[17px]';
 
+function AwardButtons({ cell, disabled, onPick }: { cell: RoscoCell; disabled?: boolean; onPick: (award: Award) => void }) {
   if (cell.acceptTitle && cell.acceptArtist) {
     return (
-      <div className="flex gap-2">
-        <button className={className} style={style} disabled={disabled} onClick={() => onPick({ title: true, artist: false })}>
-          título
-        </button>
-        <button className={className} style={style} disabled={disabled} onClick={() => onPick({ title: false, artist: true })}>
-          artista
-        </button>
-        <button className={className} style={style} disabled={disabled} onClick={() => onPick({ title: true, artist: true })}>
-          ambos
-        </button>
+      <div className="grid grid-cols-3 gap-2">
+        <button className={TRIO} disabled={disabled} onClick={() => onPick({ title: true, artist: false })}>título +1</button>
+        <button className={TRIO} disabled={disabled} onClick={() => onPick({ title: false, artist: true })}>artista +1</button>
+        <button className={TRIO} disabled={disabled} onClick={() => onPick({ title: true, artist: true })}>ambos +2</button>
       </div>
     );
   }
-
   return (
-    <button
-      className={className}
-      style={style}
-      disabled={disabled}
-      onClick={() => onPick({ title: cell.acceptTitle, artist: cell.acceptArtist })}
-    >
-      acierto
+    <button className="btn btn-success" disabled={disabled} onClick={() => onPick({ title: cell.acceptTitle, artist: cell.acceptArtist })}>
+      acierto +1
     </button>
   );
 }
 
-export function RoscoControls({
-  subMode,
-  cell,
-  players,
-  currentPlayerIndex,
-  onAward,
-  onSkip,
-  onCorrect,
-  onWrong,
-  onPass,
-}: RoscoControlsProps) {
+export function RoscoControls({ subMode, cell, players, onAward, onSkip, onCorrect, onWrong, onPass }: RoscoControlsProps) {
   const [selectedPlayerId, setSelectedPlayerId] = useState<string | null>(null);
-  const [answerRevealed, setAnswerRevealed] = useState(false);
+  const [answerShown, setAnswerShown] = useState(false);
 
   return (
-    <div className="px-5 mt-4 flex flex-col gap-3">
-      <button
-        onClick={() => setAnswerRevealed((revealed) => !revealed)}
-        className="rounded-[14px] px-4 py-3 text-center bg-tint"
-        style={{ border: '1.5px solid var(--cut-border)' }}
-      >
-        <p className="font-mono-cut text-muted mb-1" style={{ fontSize: 11 }}>
-          respuesta
-        </p>
-        {answerRevealed ? (
-          <>
-            <p className="font-display text-ink" style={{ fontStyle: 'italic', fontWeight: 700, fontSize: 17, letterSpacing: -0.3 }}>
-              {cell.song?.title ?? '—'}
-            </p>
-            <p className="font-mono-cut text-muted" style={{ fontSize: 11 }}>
-              {cell.song?.artist ?? ''}
-            </p>
-          </>
-        ) : (
-          <p className="font-display text-ink" style={{ fontStyle: 'italic', fontWeight: 700, fontSize: 15, opacity: 0.6 }}>
-            toca para ver la respuesta
-          </p>
-        )}
+    <div className="flex flex-col gap-2">
+      <button onClick={() => setAnswerShown((shown) => !shown)} className="btn btn-tone btn-small" aria-pressed={answerShown}>
+        {answerShown && cell.song ? `${cell.song.title} · ${cell.song.artist}` : 'ver respuesta'}
       </button>
 
       {subMode === 'turnos' ? (
         <>
-          <p className="font-mono-cut text-muted text-center" style={{ fontSize: 11 }}>
-            turno de {players[currentPlayerIndex]?.name}
-          </p>
-          <AwardButtons cell={cell} disabled={!answerRevealed} onPick={onCorrect} />
-          <div className="flex gap-2">
-            <button
-              onClick={onWrong}
-              className="flex-1 py-3 rounded-[14px] font-display active:opacity-70"
-              style={{ background: 'var(--color-error)', color: '#fff4ed', fontSize: 14, fontStyle: 'italic', fontWeight: 700 }}
-            >
-              fallo
-            </button>
-            <button
-              onClick={onPass}
-              className="flex-1 py-3 rounded-[14px] font-display text-ink active:opacity-70"
-              style={{ border: '1.5px solid var(--cut-border)', fontSize: 14, fontStyle: 'italic', fontWeight: 700 }}
-            >
-              pasapalabra
-            </button>
+          <AwardButtons cell={cell} onPick={onCorrect} />
+          <div className="grid grid-cols-2 gap-2">
+            <button onClick={onWrong} className="btn btn-signal">fallo.</button>
+            <button onClick={onPass} className="btn btn-tone">pasapalabra.</button>
           </div>
         </>
       ) : (
         <>
-          <p className="font-mono-cut text-muted text-center" style={{ fontSize: 11 }}>
-            ¿quién la acertó?
-          </p>
-          <div className="flex flex-wrap gap-2 justify-center">
+          <div className="flex flex-wrap gap-2" role="radiogroup" aria-label="¿quién la acertó?">
             {players.map((p) => (
               <button
                 key={p.id}
+                role="radio"
+                aria-checked={selectedPlayerId === p.id}
                 onClick={() => setSelectedPlayerId(p.id)}
-                className={cn(
-                  'px-3 py-2 rounded-full font-display text-ink transition-opacity',
-                  selectedPlayerId === p.id ? 'bg-tint' : 'opacity-60',
-                )}
-                style={{
-                  border: selectedPlayerId === p.id ? '2.5px solid var(--cut-ink)' : '1.5px solid var(--cut-border)',
-                  fontSize: 13,
-                  fontStyle: 'italic',
-                  fontWeight: 700,
-                }}
+                className={cn('btn btn-small grow px-4', selectedPlayerId === p.id ? 'btn-cream' : 'btn-tone')}
               >
                 {p.name}
               </button>
@@ -145,7 +67,7 @@ export function RoscoControls({
           </div>
           <AwardButtons
             cell={cell}
-            disabled={!selectedPlayerId || !answerRevealed}
+            disabled={!selectedPlayerId}
             onPick={(award) => {
               if (!selectedPlayerId) return;
               onAward(selectedPlayerId, award);
@@ -157,10 +79,9 @@ export function RoscoControls({
               onSkip();
               setSelectedPlayerId(null);
             }}
-            className="w-full py-3 rounded-[14px] font-display text-muted active:opacity-70"
-            style={{ border: '1.5px solid var(--cut-border)', fontSize: 14, fontStyle: 'italic', fontWeight: 700 }}
+            className="btn btn-tone btn-small"
           >
-            nadie / saltar letra
+            nadie · siguiente letra
           </button>
         </>
       )}

@@ -13,7 +13,7 @@ export interface SocketContextValue {
   updateConfig: (config: Partial<RoomConfig>) => void;
   startGame: () => void;
   flipCard: () => void;
-  selectPosition: (position: number) => void;
+  selectPosition: (position: number | null) => void;
   placeCard: () => void;
   nextTurn: () => void;
   skipCard: (paid: boolean) => void;

@@ -136,7 +136,7 @@ export function getRoom(code: string): Room | undefined {
 
 export function getRoomByPlayer(playerId: string): Room | undefined {
   for (const room of rooms.values()) {
-    if (room.players.find((p) => p.id === playerId)) return room;
+    if (room.players.some((p) => p.id === playerId && p.connected)) return room;
   }
 }
 
@@ -409,9 +409,13 @@ function resetRound(room: Room) {
   room.tokenAwarded = false;
 }
 
-export function selectPosition(code: string, position: number): Room {
+export function selectPosition(code: string, position: number | null): Room {
   const room = rooms.get(code);
   if (!room) throw new Error('Sala no encontrada');
+  if (room.status !== 'round_active') throw new Error('No hay disco por ubicar');
+  const timeline = room.players[room.currentPlayerIndex]?.timeline ?? [];
+  const isPlace = position !== null && Number.isInteger(position) && position >= 0 && position <= timeline.length;
+  if (position !== null && !isPlace) throw new Error('Lugar inválido');
   room.selectedPosition = position;
   saveRooms();
   return room;

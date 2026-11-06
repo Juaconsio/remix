@@ -79,6 +79,8 @@ export function useYouTubePlayer(): UseYouTubePlayerReturn {
   const isPrimingRef = useRef(false);
 
   const [state, setState] = useState<YouTubePlayerState>(IDLE);
+  const busyRef = useRef(false);
+  useEffect(() => { busyRef.current = state.isLoading || state.isPlaying; }, [state.isLoading, state.isPlaying]);
 
   const clearTimers = useCallback(() => {
     if (stopTimerRef.current) clearTimeout(stopTimerRef.current);
@@ -132,18 +134,20 @@ export function useYouTubePlayer(): UseYouTubePlayerReturn {
     clearTimers();
     pendingTimerRef.current = null;
     queuedHookRef.current = null;
+    busyRef.current = false;
     playerRef.current?.pauseVideo();
     setState(IDLE);
     setYtPlaying(false);
   }, [clearTimers, setYtPlaying]);
 
   const play = useCallback((videoId: string, hookStart: number, hookDuration: number) => {
-    if (state.isLoading || state.isPlaying) return;
+    if (busyRef.current) return;
+    busyRef.current = true;
     clearTimers();
     setState(LOADING);
     loadAndPlay({ videoId, hookStart, hookDuration });
     failIfStillLoading();
-  }, [state.isLoading, state.isPlaying, clearTimers, loadAndPlay, failIfStillLoading]);
+  }, [clearTimers, loadAndPlay, failIfStillLoading]);
 
   const unlock = useCallback((videoId: string) => {
     const player = playerRef.current;

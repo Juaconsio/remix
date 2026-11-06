@@ -2,10 +2,13 @@ import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
 import { useSocket } from '../hooks/useSocket';
-import { SIGNAL_STRIPE } from '../utils/songColor';
+import { SIGNAL_ACCENT } from '../utils/songColor';
 import { EASE_OUT } from '../utils/motion';
 import { SettingsTrigger } from '../game/components/SettingsTrigger';
+import { Vinyl } from '../game/components/Vinyl';
 import type { GameMode } from '../types/socket';
+
+const DEV_LINK = 'font-label text-muted underline underline-offset-4 min-h-11';
 
 export default function Home() {
   const navigate = useNavigate();
@@ -58,91 +61,66 @@ export default function Home() {
     transition: { duration: prefersReduced ? 0.15 : 0.22, ease: EASE_OUT, delay },
   });
 
+  const errorText = error && <p className="font-label text-error">{error}</p>;
+  const backButton = (
+    <button type="button" onClick={() => setMode('idle')} className="font-label text-muted min-h-11 text-left">
+      ← volver
+    </button>
+  );
+
   return (
-    <main className="relative flex flex-col items-center justify-center px-6 bg-bg min-h-dvh">
-      <div className="absolute top-[14px] right-[14px]">
+    <main className="relative grid grid-cols-1 grid-rows-[auto_minmax(10rem,1fr)_auto_auto] min-h-dvh max-w-107.5 mx-auto overflow-hidden bg-bg text-ink px-5 pb-safe">
+      <div className="flex items-center justify-between pt-4">
+        <p className="font-display" style={{ fontSize: 28 }}>remix.</p>
         <SettingsTrigger />
       </div>
 
-      <div className="flex flex-col items-center gap-10 w-full max-w-sm">
-
-        {/* Wordmark */}
+      <div className="relative my-6" aria-hidden="true">
         <motion.div
-          className="flex flex-col items-center gap-4 text-center"
-          initial={hidden(12)}
-          animate={settled}
-          transition={{ duration: prefersReduced ? 0.15 : 0.4, ease: EASE_OUT }}
+          className="absolute inset-y-0 -left-[22%] aspect-square max-w-[82vw]"
+          initial={prefersReduced ? false : { opacity: 0, x: '-30%' }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ duration: 1.1, ease: EASE_OUT, delay: 0.2 }}
         >
-          <div className="flex w-48 h-2 rounded-full overflow-hidden">
-            {SIGNAL_STRIPE.map((c) => (
-              <div key={c} style={{ flex: 1, background: c }} />
-            ))}
-          </div>
-
-          <h1
-            className="font-display text-ink"
-            style={{ fontSize: 72, lineHeight: 0.9, letterSpacing: -4 }}
-          >
-            remix.
-          </h1>
-
-          <p
-            className="font-serif-accent text-ink"
-            style={{ fontSize: 18, opacity: 0.65 }}
-          >
-            Escucha. Recuerda. Ordena.
-          </p>
+          <Vinyl accent={SIGNAL_ACCENT} spinning>remix.</Vinyl>
         </motion.div>
+      </div>
 
-        {/* Buttons / forms */}
-        <AnimatePresence mode="wait">
+      <motion.div
+        className="relative mb-6"
+        initial={hidden(24)}
+        animate={settled}
+        transition={{ duration: prefersReduced ? 0.15 : 0.8, ease: EASE_OUT, delay: 0.1 }}
+      >
+        <h1 className="font-display" style={{ fontSize: 'clamp(40px, 12.6vw, 56px)', lineHeight: 0.96 }}>
+          ¿cuánto sabes<br />de la canción?
+        </h1>
+        <p className="font-display mt-3" style={{ fontSize: 19, fontWeight: 700, lineHeight: 1.15 }}>
+          suena una canción, la ubicas por año y cada acierto suma.
+        </p>
+      </motion.div>
+
+      <AnimatePresence mode="wait">
         {mode === 'idle' && (
-          <motion.div
-            key="idle"
-            className="flex flex-col gap-3 w-full"
-            {...panelMotion(0.06)}
-          >
-            <button className="btn-primary" onClick={() => setMode('create')}>
-              crear sala. <span>→</span>
-            </button>
-            <button className="btn-secondary" onClick={() => setMode('join')}>
-              unirme con código →
-            </button>
+          <motion.div key="idle" className="relative flex flex-col gap-2" {...panelMotion(0.06)}>
+            <button className="btn btn-signal" onClick={() => setMode('create')}>armar una sala.</button>
+            <button className="btn btn-ink" onClick={() => setMode('join')}>unirme con código.</button>
             {import.meta.env.DEV && (
-              <>
-                <button
-                  onClick={() => { setDevMode('classic'); createRoom('Dev'); }}
-                  className="font-mono-cut text-ink bg-transparent border-none cursor-pointer p-2 min-h-11 underline underline-offset-4"
-                  style={{ fontSize: 10, letterSpacing: '0.15em', opacity: 0.4 }}
-                >
-                  ⚡ dev: youtube solo →
+              <div className="flex flex-wrap gap-x-4">
+                <button onClick={() => { setDevMode('classic'); createRoom('Dev'); }} className={DEV_LINK}>
+                  dev: youtube solo
                 </button>
-                <button
-                  onClick={() => { setDevMode('rosco'); createRoom('Dev'); }}
-                  className="font-mono-cut text-ink bg-transparent border-none cursor-pointer p-2 min-h-11 underline underline-offset-4"
-                  style={{ fontSize: 10, letterSpacing: '0.15em', opacity: 0.4 }}
-                >
-                  ⚡ dev: rosco solo →
+                <button onClick={() => { setDevMode('rosco'); createRoom('Dev'); }} className={DEV_LINK}>
+                  dev: rosco solo
                 </button>
-                <a
-                  href="/playground"
-                  className="font-mono-cut text-ink bg-transparent border-none cursor-pointer p-2 underline underline-offset-4 text-center"
-                  style={{ fontSize: 10, letterSpacing: '0.15em', opacity: 0.4 }}
-                >
-                  🎨 playground →
-                </a>
-              </>
+                <a href="/playground" className={`${DEV_LINK} inline-flex items-center`}>playground</a>
+              </div>
             )}
           </motion.div>
         )}
 
         {mode === 'create' && (
-          <motion.form
-            key="create"
-            onSubmit={handleCreate}
-            className="flex flex-col gap-3 w-full"
-            {...panelMotion(0)}
-          >
+          <motion.form key="create" onSubmit={handleCreate} className="relative flex flex-col gap-2" {...panelMotion(0)}>
             <input
               autoFocus
               type="text"
@@ -155,35 +133,14 @@ export default function Home() {
               enterKeyHint="go"
               className="input-cut"
             />
-            {error && (
-              <p
-                className="font-mono-cut text-error text-center"
-                style={{ fontSize: 11, letterSpacing: '0.12em' }}
-              >
-                {error}
-              </p>
-            )}
-            <button type="submit" disabled={!playerName.trim()} className="btn-primary">
-              crear sala. <span>→</span>
-            </button>
-            <button
-              type="button"
-              onClick={() => setMode('idle')}
-              className="font-mono-cut text-ink bg-transparent border-none cursor-pointer p-2 min-h-11 underline underline-offset-4"
-              style={{ fontSize: 11, letterSpacing: '0.15em', opacity: 0.5 }}
-            >
-              ← volver
-            </button>
+            {errorText}
+            <button type="submit" disabled={!playerName.trim()} className="btn btn-signal">armar una sala.</button>
+            {backButton}
           </motion.form>
         )}
 
         {mode === 'join' && (
-          <motion.form
-            key="join"
-            onSubmit={handleJoin}
-            className="flex flex-col gap-3 w-full"
-            {...panelMotion(0)}
-          >
+          <motion.form key="join" onSubmit={handleJoin} className="relative flex flex-col gap-2" {...panelMotion(0)}>
             <input
               autoFocus
               type="text"
@@ -207,37 +164,17 @@ export default function Home() {
               autoCorrect="off"
               spellCheck={false}
               enterKeyHint="go"
-              className="input-cut font-mono-cut text-center"
-              style={{ fontStyle: 'normal', letterSpacing: '0.3em', fontSize: 22 }}
+              className="input-cut font-year text-center"
+              style={{ letterSpacing: '0.3em', fontSize: 26 }}
             />
-            {error && (
-              <p
-                className="font-mono-cut text-error text-center"
-                style={{ fontSize: 11, letterSpacing: '0.12em' }}
-              >
-                {error}
-              </p>
-            )}
-            <button
-              type="submit"
-              disabled={!playerName.trim() || joinCode.length < 4}
-              className="btn-primary"
-            >
-              unirme. <span>→</span>
+            {errorText}
+            <button type="submit" disabled={!playerName.trim() || joinCode.length < 4} className="btn btn-signal">
+              unirme.
             </button>
-            <button
-              type="button"
-              onClick={() => setMode('idle')}
-              className="font-mono-cut text-ink bg-transparent border-none cursor-pointer p-2 min-h-11 underline underline-offset-4"
-              style={{ fontSize: 11, letterSpacing: '0.15em', opacity: 0.5 }}
-            >
-              ← volver
-            </button>
+            {backButton}
           </motion.form>
         )}
-        </AnimatePresence>
-
-      </div>
+      </AnimatePresence>
     </main>
   );
 }

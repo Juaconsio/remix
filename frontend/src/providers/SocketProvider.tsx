@@ -93,7 +93,7 @@ export function SocketProvider({ children }: { children: ReactNode }) {
     socketRef.current?.emit('game:flip');
   }, []);
 
-  const selectPosition = useCallback((position: number) => {
+  const selectPosition = useCallback((position: number | null) => {
     socketRef.current?.emit('game:select', { position });
   }, []);
 

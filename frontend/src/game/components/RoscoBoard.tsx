@@ -1,51 +1,43 @@
+import type { ReactNode } from 'react';
 import type { RoscoCell } from '../../types/socket';
+import { cn } from '../../utils/cn';
 
 interface RoscoBoardProps {
   board: RoscoCell[];
   activeIndex: number;
+  children?: ReactNode;
 }
 
-function tileStyle(cell: RoscoCell, isActive: boolean): React.CSSProperties {
-  if (isActive) {
-    return {
-      background: 'var(--color-accent)',
-      color: '#fff4ed',
-      boxShadow: '0 0 0 3px var(--cut-bg), 0 0 0 5px var(--color-accent)',
-    };
-  }
-  switch (cell.status) {
-    case 'correct':
-      return { background: 'var(--color-success)', color: '#0e0e0e' };
-    case 'wrong':
-      return { background: 'var(--color-error)', color: '#fff4ed' };
-    case 'passed':
-      return { border: '1.5px dashed var(--cut-border)', color: 'var(--cut-muted)' };
-    default:
-      return { border: '1.5px solid var(--cut-border)', color: 'var(--cut-muted)' };
-  }
-}
+const TILE_BY_STATUS: Record<RoscoCell['status'], string> = {
+  pending: 'border-2 border-cream/30 text-cream/70',
+  active: 'border-2 border-cream/30 text-cream/70',
+  passed: 'border-2 border-dashed border-cream/50 text-cream',
+  correct: 'bg-success text-ground',
+  wrong: 'bg-signal text-ground',
+};
 
-export function RoscoBoard({ board, activeIndex }: RoscoBoardProps) {
-  const radiusPercent = 43;
-  const active = activeIndex >= 0 ? board[activeIndex] : null;
-  const correct = board.filter((c) => c.status === 'correct').length;
+export function RoscoBoard({ board, activeIndex, children }: RoscoBoardProps) {
+  const radiusPercent = 44;
 
   return (
-    <div className="relative mx-auto w-full max-w-[19rem] aspect-square">
+    <div className="relative aspect-square w-[min(100cqw,100cqh,22rem)] [container-type:inline-size]">
       {board.map((cell, i) => {
         const angle = (i / board.length) * 2 * Math.PI - Math.PI / 2;
         const isActive = i === activeIndex;
         return (
           <div
             key={cell.letter}
-            className="absolute flex items-center justify-center w-9 h-9 rounded-full font-display transition-all duration-200"
+            className={cn(
+              'absolute flex items-center justify-center size-[10.5cqw] rounded-full font-display transition-all duration-200',
+              isActive ? 'bg-cream text-ground outline-3 outline-offset-2 outline-cream' : TILE_BY_STATUS[cell.status],
+            )}
             style={{
               left: `${50 + radiusPercent * Math.cos(angle)}%`,
               top: `${50 + radiusPercent * Math.sin(angle)}%`,
-              transform: `translate(-50%, -50%) scale(${isActive ? 1.15 : 1})`,
-              fontSize: 15,
+              transform: `translate(-50%, -50%) scale(${isActive ? 1.2 : 1})`,
+              fontSize: 'max(12px, 5cqw)',
+              fontWeight: 900,
               zIndex: isActive ? 10 : 1,
-              ...tileStyle(cell, isActive),
             }}
           >
             {cell.letter}
@@ -53,25 +45,7 @@ export function RoscoBoard({ board, activeIndex }: RoscoBoardProps) {
         );
       })}
 
-      <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none text-center">
-        {active ? (
-          <>
-            <span className="font-mono-cut text-muted" style={{ fontSize: 11 }}>
-              letra
-            </span>
-            <span className="font-display" style={{ fontSize: 72, lineHeight: 1, letterSpacing: -4, color: 'var(--color-accent)' }}>
-              {active.letter}
-            </span>
-          </>
-        ) : (
-          <span className="font-display text-ink" style={{ fontSize: 32, letterSpacing: -1.5 }}>
-            fin.
-          </span>
-        )}
-        <span className="font-mono-cut text-muted mt-2" style={{ fontSize: 11 }}>
-          {correct}/{board.length} acertadas
-        </span>
-      </div>
+      <div className="absolute inset-[17%] grid place-items-center">{children}</div>
     </div>
   );
 }

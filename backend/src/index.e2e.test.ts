@@ -245,3 +245,21 @@ describe('rosco paralelo completo', () => {
     players.forEach((p) => p.close());
   }, 30_000);
 });
+
+describe('cambio de sala', () => {
+  it('quien arma otra sala sale de la anterior y sus acciones van a la nueva', async () => {
+    const players = await openTable(['ana', 'bea'], { mode: 'classic', provider: 'deezer', audioOutput: 'everyone' });
+    const [host, guest] = players;
+    const oldCode = host.room!.code;
+
+    const hostSeesLeave = host.next((r) => r.players.length === 1);
+    const created = await guest.act('room:create', { playerName: 'bea' }, (r) => r.code !== oldCode);
+    expect((await hostSeesLeave).players.map((p) => p.name)).toEqual(['ana']);
+
+    await guest.act('room:config', { mode: 'rosco' }, (r) => r.code === created.code && r.config.mode === 'rosco');
+    const started = await guest.act('game:start', undefined, (r) => r.code === created.code && r.status === 'round_active');
+    expect(started.rosco).not.toBeNull();
+    expect(host.room).toMatchObject({ code: oldCode, status: 'lobby', config: { mode: 'classic' } });
+    players.forEach((p) => p.close());
+  }, 30_000);
+});
