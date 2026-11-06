@@ -114,15 +114,20 @@ export default function Game() {
     ? room.selectedPosition ?? restingPlace
     : timeline.filter((song) => song.year < card.year).length;
 
-  const cratePosition = isRevealed ? revealedPlace : canSteal ? stealPlace : isChoosing ? myPlace : restingPlace;
+  const isPlaced = room.status === 'round_active' && room.selectedPosition !== null;
+  const isBrowsingMine = isChoosing && !isPlaced;
 
-  const choose = (place: number) => {
-    const next = clampPlace(place);
-    setBrowse({ cardId, place: next });
-    selectPosition(next);
+  const cratePosition = isRevealed ? revealedPlace : canSteal ? stealPlace : isBrowsingMine ? myPlace : restingPlace;
+
+  const browseMine = (place: number) => setBrowse({ cardId, place: clampPlace(place) });
+  const browseSteal = (place: number) => setStealBrowse({ cardId, place: clampPlace(place) });
+  const browseTo = canSteal ? browseSteal : isBrowsingMine ? browseMine : undefined;
+
+  const putHere = () => selectPosition(myPlace);
+  const takeOut = () => {
+    if (room.selectedPosition !== null) browseMine(room.selectedPosition);
+    selectPosition(null);
   };
-  const chooseSteal = (place: number) => setStealBrowse({ cardId, place: clampPlace(place) });
-  const browseTo = canSteal ? chooseSteal : isChoosing ? choose : undefined;
 
   const isHost     = room.hostId === myPlayerId;
   const isLastTurn = room.deck.length === 0 || room.players.some((p) => p.score >= WIN_SCORE);
@@ -133,11 +138,11 @@ export default function Game() {
     if (nextCard) playSong(nextCard);
   };
 
-  const placeHere = () => {
+  const confirmPlace = () => {
     activePlayer.stop();
-    if (room.selectedPosition !== myPlace) selectPosition(myPlace);
     placeCard();
   };
+  const handleCrateEnter = isBrowsingMine ? putHere : isChoosing && canListen ? confirmPlace : undefined;
 
   const stealWinnerName = nameOf(room.stealWinnerId);
 
@@ -170,9 +175,15 @@ export default function Game() {
       ? 'sin fichas para robar.'
       : 'esperando al resto…'
     : isChoosing
-    ? displayError ?? (canListen ? describePlace(timeline, myPlace) : 'escucha la canción.')
+    ? displayError ?? (!isPlaced
+      ? describePlace(timeline, myPlace)
+      : canListen
+      ? `lo pusiste ${describePlace(timeline, restingPlace)}`
+      : 'escúchala para confirmar.')
     : room.status === 'round_active'
-    ? room.selectedPosition === null ? 'hojeando…' : describePlace(timeline, room.selectedPosition)
+    ? room.selectedPosition === null
+      ? 'hojeando…'
+      : `${currentPlayer.name} lo puso ${describePlace(timeline, room.selectedPosition)}`
     : isActivePlayer
     ? 'cuando suene, hojea tu caja.'
     : `esperando a ${currentPlayer.name}…`;
@@ -191,7 +202,7 @@ export default function Game() {
         songs={timeline}
         position={cratePosition}
         onPositionChange={browseTo}
-        onConfirm={isChoosing && canListen ? placeHere : undefined}
+        onConfirm={handleCrateEnter}
         browsable={!!browseTo}
         title={isActivePlayer ? 'tu caja' : `caja de ${currentPlayer.name}`}
         note={`${plural(currentPlayer.score, 'pt', 'pts')} · ${plural(currentPlayer.tokens, 'ficha', 'fichas')}`}
@@ -203,6 +214,15 @@ export default function Game() {
         {isRevealed && card ? (
           <CrateDisc state="fuera" accent={decadeAccent(card.year)}>
             <span className="etiqueta-anio">{card.year}</span>
+          </CrateDisc>
+        ) : isPlaced ? (
+          <CrateDisc
+            state="puesto"
+            spinning={activePlayer.isPlaying}
+            onTap={isChoosing ? takeOut : undefined}
+            tapLabel="sacar el disco"
+          >
+            ¿?
           </CrateDisc>
         ) : (
           <CrateDisc
@@ -231,11 +251,18 @@ export default function Game() {
 
         {isChoosing && !missingYouTubeVideo && !displayError && (
           <>
-            <div className={BROWSE_ROW}>
-              <button onClick={() => choose(myPlace - 1)} disabled={myPlace === 0} aria-label="antes" className={ARROW}>‹</button>
-              <button onClick={placeHere} disabled={!canListen} className="btn btn-signal">va aquí.</button>
-              <button onClick={() => choose(myPlace + 1)} disabled={myPlace === lastPlace} aria-label="después" className={ARROW}>›</button>
-            </div>
+            {isPlaced ? (
+              <div className="grid grid-cols-[1fr_2fr] gap-2">
+                <button onClick={takeOut} className="btn btn-tone">sacarlo.</button>
+                <button onClick={confirmPlace} disabled={!canListen} className="btn btn-signal">va aquí.</button>
+              </div>
+            ) : (
+              <div className={BROWSE_ROW}>
+                <button onClick={() => browseMine(myPlace - 1)} disabled={myPlace === 0} aria-label="antes" className={ARROW}>‹</button>
+                <button onClick={putHere} className="btn btn-cream">ponerlo aquí.</button>
+                <button onClick={() => browseMine(myPlace + 1)} disabled={myPlace === lastPlace} aria-label="después" className={ARROW}>›</button>
+              </div>
+            )}
             {canPaySkip && (
               <button onClick={() => { activePlayer.stop(); skipCard(true); }} className="btn btn-tone btn-small">
                 saltar · 1 ficha
@@ -251,11 +278,11 @@ export default function Game() {
         {canSteal && (
           <>
             <div className={BROWSE_ROW}>
-              <button onClick={() => chooseSteal(stealPlace - 1)} disabled={stealPlace === 0} aria-label="antes" className={ARROW}>‹</button>
+              <button onClick={() => browseSteal(stealPlace - 1)} disabled={stealPlace === 0} aria-label="antes" className={ARROW}>‹</button>
               <button onClick={() => stealCard(stealPlace)} disabled={stealSpotTaken} className="btn btn-signal">
                 {stealSpotTaken ? 'lugar tomado.' : 'robar · 1 ficha'}
               </button>
-              <button onClick={() => chooseSteal(stealPlace + 1)} disabled={stealPlace === lastPlace} aria-label="después" className={ARROW}>›</button>
+              <button onClick={() => browseSteal(stealPlace + 1)} disabled={stealPlace === lastPlace} aria-label="después" className={ARROW}>›</button>
             </div>
             <button onClick={passSteal} className="btn btn-tone btn-small">paso</button>
           </>

@@ -24,7 +24,7 @@ const CRATE_SONGS: Song[] = [
 ];
 
 const DECADE_YEARS = [1965, 1975, 1985, 1995, 2005, 2015, 2025];
-const DISC_STATES: DiscState[] = ['asomado', 'mano', 'fuera'];
+const DISC_STATES: DiscState[] = ['asomado', 'mano', 'puesto', 'fuera'];
 
 function Pill({ label, active, onClick }: { label: string; active: boolean; onClick: () => void }) {
   return (

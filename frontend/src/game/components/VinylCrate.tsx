@@ -8,8 +8,8 @@ const DEPTH_BETWEEN_SLEEVES = 30;
 const RISE_BETWEEN_SLEEVES = 15;
 const SPACING_BETWEEN_FALLEN = 9;
 const RESTING_TILT = 7;
-const FLIPPED_TILT = -64;
-const EXTRA_TILT_PER_FALLEN = 7;
+const FLIPPED_TILT = -32;
+const EXTRA_TILT_PER_FALLEN = 16;
 const SLEEVES_VISIBLE_BEHIND = 3;
 const SLEEVES_VISIBLE_IN_FRONT = 3;
 const PIXELS_PER_SLEEVE = 44;
@@ -29,10 +29,10 @@ function sleevePose(distance: number): { transform: string; opacity: number } {
   return { transform: `translate3d(-50%, ${y}px, ${z}px) rotateX(${tilt}deg)`, opacity: hidden ? 0 : 1 };
 }
 
-function Sleeve({ song, distance, inView }: { song: Song; distance: number; inView: boolean }) {
+function Sleeve({ song, distance, inView, justBefore }: { song: Song; distance: number; inView: boolean; justBefore: boolean }) {
   return (
     <div
-      className={cn('cv-funda', inView && 'cv-a-la-vista')}
+      className={cn('cv-funda', inView && 'cv-a-la-vista', justBefore && 'cv-anterior')}
       style={{ ...sleevePose(distance), ...accentStyle(decadeAccent(song.year)) }}
       aria-hidden="true"
     >
@@ -46,6 +46,7 @@ function Sleeve({ song, distance, inView }: { song: Song; distance: number; inVi
         <b className="cv-anio">{song.year}</b>
         <span className="cv-artista">{song.title}</span>
       </div>
+      <i className="cv-canto" />
     </div>
   );
 }
@@ -177,7 +178,7 @@ export function VinylCrate({
       >
         <div className="cv-escena">
           {songs.map((song, i) => (
-            <Sleeve key={song.id} song={song} distance={i + 0.5 - cursor} inView={i === place} />
+            <Sleeve key={song.id} song={song} distance={i + 0.5 - cursor} inView={i === place} justBefore={i === place - 1} />
           ))}
           {markers.map((marker, i) => {
             const { transform, opacity } = sleevePose(marker.position + 0.5 - cursor);
@@ -205,7 +206,7 @@ export function VinylCrate({
   );
 }
 
-export type DiscState = 'asomado' | 'mano' | 'fuera';
+export type DiscState = 'asomado' | 'mano' | 'puesto' | 'fuera';
 
 interface CrateDiscProps {
   state: DiscState;

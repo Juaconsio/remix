@@ -85,7 +85,7 @@ export interface ClientToServerEvents {
   'room:config': (payload: Partial<RoomConfig>) => void;
   'game:start': () => void;
   'game:flip': () => void;
-  'game:select': (payload: { position: number }) => void;
+  'game:select': (payload: { position: number | null }) => void;
   'game:place': () => void;
   'game:next': () => void;
   'game:audio:started': () => void;
