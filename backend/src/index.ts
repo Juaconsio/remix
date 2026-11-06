@@ -65,8 +65,17 @@ function broadcastRoom(room: Room, event: RoomEvent, exceptId?: string) {
 }
 
 io.on('connection', (socket) => {
+  const leaveCurrentRoom = () => {
+    const current = rm.getRoomByPlayer(socket.id);
+    if (!current) return;
+    socket.leave(current.code);
+    const room = rm.removePlayer(socket.id);
+    if (room) broadcastRoom(room, 'room:updated');
+  };
+
   socket.on('room:create', ({ playerName }) => {
     try {
+      leaveCurrentRoom();
       const room = rm.createRoom(socket.id, playerName);
       socket.join(room.code);
       socket.emit('room:joined', { room: redactRoom(room, socket.id), yourPlayerId: socket.id });
@@ -95,6 +104,7 @@ io.on('connection', (socket) => {
 
   socket.on('room:join', ({ code, playerName }) => {
     try {
+      leaveCurrentRoom();
       const room = rm.joinRoom(code, socket.id, playerName);
       socket.join(room.code);
       socket.emit('room:joined', { room: redactRoom(room, socket.id), yourPlayerId: socket.id });
@@ -290,10 +300,7 @@ io.on('connection', (socket) => {
 
   socket.on('rosco:pass', () => onRoscoAction(rm.roscoPass));
 
-  socket.on('disconnect', () => {
-    const room = rm.removePlayer(socket.id);
-    if (room) broadcastRoom(room, 'room:updated');
-  });
+  socket.on('disconnect', leaveCurrentRoom);
 });
 
 const PORT = process.env.PORT ?? 4000;

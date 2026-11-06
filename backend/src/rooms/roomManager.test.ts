@@ -151,6 +151,14 @@ describe('removePlayer', () => {
     expect(rm.removePlayer(room.players[1].id)).toBeUndefined();
     expect(rm.getRoom(room.code)).toBeUndefined();
   });
+
+  it('quien sale de una partida en curso deja de resolver a esa sala', () => {
+    const room = classicRoom(3);
+    const leaving = room.players[1].id;
+    rm.removePlayer(leaving);
+    const next = rm.createRoom(leaving, 'jugador 1');
+    expect(rm.getRoomByPlayer(leaving)).toBe(next);
+  });
 });
 
 describe('flipCard y selectPosition', () => {

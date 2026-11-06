@@ -136,7 +136,7 @@ export function getRoom(code: string): Room | undefined {
 
 export function getRoomByPlayer(playerId: string): Room | undefined {
   for (const room of rooms.values()) {
-    if (room.players.find((p) => p.id === playerId)) return room;
+    if (room.players.some((p) => p.id === playerId && p.connected)) return room;
   }
 }
 
