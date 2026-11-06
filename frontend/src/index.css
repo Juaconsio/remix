@@ -157,7 +157,8 @@
 .btn-signal:disabled { background: var(--color-tono-2); color: var(--color-cream); opacity: 0.7; }
 .btn-cream { background: var(--color-cream); color: var(--color-ground); }
 .btn-tone { background: var(--color-tono-2); color: var(--color-cream); }
-.btn-cream:disabled, .btn-tone:disabled { opacity: 0.35; }
+.btn-success { background: var(--color-success); color: var(--color-ground); }
+.btn-cream:disabled, .btn-tone:disabled, .btn-success:disabled { opacity: 0.35; }
 .btn-ink { background: var(--cut-ink); color: var(--cut-bg); }
 .btn-ink:disabled { opacity: 0.35; }
 .btn-small { min-height: 48px; font-size: 17px; }
@@ -338,6 +339,12 @@
 .cv-disco:disabled { cursor: default; }
 .cv-dorso .cv-anio { font-size: 34px; }
 .etiqueta-icono { width: 42%; fill: currentColor; }
+
+.rosco-disco { display: block; width: 100%; padding: 0; border: none; background: none; border-radius: 50%; touch-action: manipulation; }
+.rosco-disco:disabled { cursor: default; }
+.rosco-disco .etiqueta { align-content: center; gap: 1.5cqw; }
+.rosco-disco .etiqueta-icono { width: 22%; }
+.rosco-letra { font-size: 17cqw; font-weight: 900; line-height: 0.85; letter-spacing: -0.04em; }
 
 .cv-pista {
   position: absolute;
